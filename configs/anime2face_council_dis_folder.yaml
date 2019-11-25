@@ -1,0 +1,135 @@
+# Copyright (C) 2018 NVIDIA Corporation.  All rights reserved.
+# Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
+
+# logger options
+image_save_iter: 500          # How often do you want to save output images during training
+image_display_iter: 100       # How often do you want to display output images during training
+display_size: 16              # How many images do you want to display each time
+snapshot_save_iter: 5000      # How often do you want to save trained models
+log_iter: 1                   # How often do you want to log the training stats
+
+# optimization options
+random_seed: 1
+max_iter: 1500000             # maximum number of training iterations
+batch_size: 1                 # batch size
+weight_decay: 0.0001          # weight decay
+beta1: 0.5                    # Adam parameter
+beta2: 0.999                  # Adam parameter
+init: kaiming                 # initialization [gaussian/kaiming/xavier/orthogonal]
+lr: 0.0001                    # initial learning rate
+lr_policy: step               # learning rate scheduler
+step_size: 100000             # how often to decay learning rate
+gamma: 0.5                    # how much to decay learning rate
+gan_w: 26                     # weight of adversarial loss
+recon_x_w: 0                  # weight of image reconstruction loss
+recon_s_w: 0                  # weight of style reconstruction loss
+recon_c_w: 0                  # weight of content reconstruction loss
+recon_x_cyc_w: 0              # weight of explicit style augmented cycle consistency loss
+vgg_w: 0                      # weight of domain-invariant perceptual loss
+council_w: 13
+council_abs_w: 0
+council_abs_gray_scale: False
+
+mask_zero_or_one_w: 0
+mask_total_w: 0
+
+abs_beginning_end: 0
+abs_beginning_end_less_by: 1
+abs_beginning_end_minimume: 0
+
+do_w_loss_matching: True      # match between the mean of the gan and the council loss (mean of the last "loss_matching_hist_size" sampels
+loss_matching_hist_size: 100  # the history to do avereg on so the gan loss and the council loss will match
+
+inbalenceDataSets:
+  test_inbalaced_sub_dataset: True
+  number_of_sub_dataset: 2
+
+# model options
+gen:
+  dim: 64                     # number of filters in the bottommost layer
+  mlp_dim: 256                # number of filters in MLP
+  style_dim: 64               # length of style code
+  do_my_style: False
+  activ: relu                 # activation function [relu/lrelu/prelu/selu/tanh]
+  n_downsample: 2             # number of downsampling layers in content encoder
+  n_res: 5                    # number of residual blocks in content encoder/decoder
+  pad_type: zero              # padding type [zero/reflect]
+  useRandomDis: False         # when coucil is used each generator is trained agest all discriminetors making them more foucos on commen domain featcuers
+  num_of_mask_dim_to_add: 3
+dis:
+  dim: 64                     # number of filters in the bottommost layer
+  norm: none                  # normalization layer [none/bn/in/ln]
+  activ: lrelu                # activation function [relu/lrelu/prelu/selu/tanh]
+  n_layer: 4                  # number of layers in D
+  gan_type: lsgan             # GAN loss [lsgan/nsgan] RelativisticAverageHingeGAN
+  num_scales: 2               # number of scales
+  pad_type: zero              # padding type [zero/reflect]
+  useRandomGen: False         # when coucil is used each discriminetor is trained agest all generators making them more foucos on commen domain featcuers
+  do_Dis_only_gray: False
+  numberOf_dis_relative_iteration: 1
+
+council:
+  useJudge: False
+  council_size: 4
+  numberOfCouncil_dis_relative_iteration: 4
+  flipOnOff: False
+  flipOnOff_start_with: True
+  flipOnOff_On_iteration: 45
+  flipOnOff_Off_iteration: 5
+  discriminetro_less_style_by: 0.71
+
+
+distrbution_match:
+  do_dist_match_origin_domin_loss: True
+  inblaceRatio_A: 0.99999-0.00001
+  inblaceRatio_B: 0.999-0.001
+  RunTestsIteration: 100
+  testFidIteration: 100
+
+# data options
+do_a2b: False
+do_b2a: True
+input_dim_a: 3                              # number of image channels [1/3]
+input_dim_b: 3                              # number of image channels [1/3]
+num_workers: 8                              # number of data loading threads
+new_size: 256                                # first resize the shortest image side to this size
+crop_image_height: 256                     # random crop image of this height
+crop_image_width: 256                       # random crop image of this width
+
+do_HorizontalFlip: True
+do_VerticalFlip: False
+do_ColorJitter_A: True
+do_ColorJitter_B: True
+ColorJitter_hue: 0.1
+ColorJitter_brightness: 0.1
+ColorJitter_saturation: 0.1
+ColorJitter_contrast: 0.1
+
+do_RandomGrayscale: True
+RandomGrayscale_P: 0.05
+
+do_RandomRotation: False
+RandomRotation_degree: 35
+
+do_RandomAffine: False
+RandomAffine_translate_h: 0.2
+RandomAffine_translate_w: 0.2
+
+do_RandomPerspective: False
+
+do_RandomResizedCrop: False
+RandomResizedCrop_scale_max: 2
+RandomResizedCrop_scale_min: 0.5
+RandomResizedCrop_ratio_max: 4. / 3.
+RandomResizedCrop_ratio_min: 3. / 4.
+
+data_root: ./datasets/selfie2anime   # dataset folder location
+
+misc:
+  start_tensor_board: False
+  start_tensor_board port: 6006
+
+
+
+
+
