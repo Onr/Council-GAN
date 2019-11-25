@@ -69,7 +69,6 @@ dis:
   numberOf_dis_relative_iteration: 1
 
 council:
-  useJudge: False
   council_size: 4
   numberOfCouncil_dis_relative_iteration: 4
   flipOnOff: False
@@ -77,6 +76,7 @@ council:
   flipOnOff_On_iteration: 45
   flipOnOff_Off_iteration: 5
   discriminetro_less_style_by: 0.71
+  start_On_iteration: 2500
 
 
 distrbution_match:

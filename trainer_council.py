@@ -30,7 +30,6 @@ class Council_Trainer(nn.Module):
         self.dis_b_s = []
         self.do_dis_council = hyperparameters['council_w'] != 0
         self.do_ads_council_loss = hyperparameters['council_abs_w'] != 0
-        self.do_useJudge = hyperparameters['council']['useJudge']
         self.numberOfCouncil_dis_relative_iteration_conf = hyperparameters['council']['numberOfCouncil_dis_relative_iteration']  # self.council_size - 1 # todo chagne to difrent number maybe not self.council size
         self.discriminetro_less_style_by_conf = hyperparameters['council']['discriminetro_less_style_by']
 
@@ -41,9 +40,12 @@ class Council_Trainer(nn.Module):
         self.gan_w_conf = hyperparameters['gan_w']
         self.vgg_w_conf = hyperparameters['vgg_w']
         self.abs_beginning_end_w_conf = hyperparameters['abs_beginning_end']
+
         self.flipOnOff_On_iteration_conf = hyperparameters['council']['flipOnOff_On_iteration']
         self.flipOnOff_Off_iteration_conf = hyperparameters['council']['flipOnOff_Off_iteration']
         self.flipOnOff_Off_iteration_conf = hyperparameters['council']['flipOnOff_start_with']
+        self.start_On_iteration_conf = hyperparameters['council']['start_On_iteration']
+
         self.council_abs_w_conf = hyperparameters['council_abs_w']
         self.council_w_conf = hyperparameters['council_w']
         self.mask_zero_or_one_w_conf = hyperparameters['mask_zero_or_one_w']
@@ -51,67 +53,71 @@ class Council_Trainer(nn.Module):
         self.batch_size_conf = hyperparameters['batch_size']
         self.do_w_loss_matching = hyperparameters['do_w_loss_matching']
         self.los_matching_hist_size_conf = hyperparameters['loss_matching_hist_size']
+        self.do_a2b_conf = hyperparameters['do_a2b']
+        self.do_b2a_conf = hyperparameters['do_b2a']
         self.w_match_a_conf = 1
         self.w_match_b_conf = 1
 
-
-        self.los_hist_gan_a_s = []
-        self.los_hist_council_a_s = []
-        self.los_hist_gan_b_s = []
-        self.los_hist_council_b_s = []
+        if self.do_a2b_conf:
+            self.los_hist_gan_a2b_s = []
+            self.los_hist_council_a2b_s = []
+        if self.do_b2a_conf:
+            self.los_hist_gan_b2a_s = []
+            self.los_hist_council_b2a_s = []
         for ind in range(self.council_size):
-            self.los_hist_gan_a_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
-            self.los_hist_council_a_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
-            self.los_hist_gan_b_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
-            self.los_hist_council_b_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
+            if self.do_a2b_conf:
+                self.los_hist_gan_a2b_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
+                self.los_hist_council_a2b_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
+            if self.do_b2a_conf:
+                self.los_hist_gan_b2a_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
+                self.los_hist_council_b2a_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
 
 
 
         self.do_mine_test = False
-
         self.do_council_loss = None
-        self.do_both_sides = True  # do one side for better preformenc and show the matod dosent need both sides
 
-        # self.do_classifier_test = True
-        # if self.do_classifier_test:
-        #     self.testClassifier = ClassifierTest('./classifier/good_classifier.pt')
         if self.do_dis_council:
             self.dis_council_b_s = []
             self.dis_council_a_s = []
 
+        # defining all the networks
         for i in range(self.council_size):
-            self.gen_a_s.append(
-                AdaINGen(hyperparameters['input_dim_a'], hyperparameters['gen']))  # auto-encoder for domain a
-            self.dis_a_s.append(
-                MsImageDis(hyperparameters['input_dim_a'], hyperparameters['dis']))  # discriminator for domain a
-            self.gen_b_s.append(
-                AdaINGen(hyperparameters['input_dim_b'], hyperparameters['gen']))  # auto-encoder for domain b
-            self.dis_b_s.append(
-                MsImageDis(hyperparameters['input_dim_b'], hyperparameters['dis']))  # discriminator for domain b
-            if self.do_dis_council:
-                self.dis_council_b_s.append(#
-                    MsImageDisCouncil(hyperparameters['input_dim_b'],
-                                      hyperparameters['dis']))  # discriminator for domain b
-                self.dis_council_a_s.append(
-                    MsImageDisCouncil(hyperparameters['input_dim_a'],
-                                      hyperparameters['dis']))  # discriminator for domain a
+            if self.do_a2b_conf:
+                self.gen_a2b_s.append(
+                    AdaINGen(hyperparameters['input_dim_a'], hyperparameters['gen']))  # auto-encoder for domain a2b
+                self.dis_a2b_s.append(
+                    MsImageDis(hyperparameters['input_dim_a'], hyperparameters['dis']))  # discriminator for domain a2b
+                if self.do_dis_council:
+                    self.dis_council_a2b_s.append(
+                        MsImageDisCouncil(hyperparameters['input_dim_a'],
+                                          hyperparameters['dis']))  # council discriminator for domain a2b
+            if self.do_b2a_conf:
+                self.gen_b2a_s.append(
+                    AdaINGen(hyperparameters['input_dim_b'], hyperparameters['gen']))  # auto-encoder for domain b
+                self.dis_b2a_s.append(
+                    MsImageDis(hyperparameters['input_dim_b'], hyperparameters['dis']))  # discriminator for domain b
+                if self.do_dis_council:
+                    self.dis_council_b2a_s.append(#
+                        MsImageDisCouncil(hyperparameters['input_dim_b'],
+                                          hyperparameters['dis']))  # discriminator for domain b
 
-            if self.do_mine_test and i == 0:
-                self.mine_test_net = MINEnet(hyperparameters['input_dim_a'],
-                                      hyperparameters['dis'])  # discriminator for domain a
+
+
 
         self.instancenorm = nn.InstanceNorm2d(512, affine=False)
         self.style_dim = hyperparameters['gen']['style_dim']
 
-        self.gen_a_s = nn.ModuleList(self.gen_a_s)
-        self.dis_a_s = nn.ModuleList(self.dis_a_s)
-        self.gen_b_s = nn.ModuleList(self.gen_b_s)
-        self.dis_b_s = nn.ModuleList(self.dis_b_s)
-        if self.do_dis_council:
-            self.dis_council_b_s = nn.ModuleList(self.dis_council_b_s)
-            self.dis_council_a_s = nn.ModuleList(self.dis_council_a_s)
-        if self.do_mine_test:
-            self.mine_test_net = nn.ModuleList(self.mine_test_net)
+        if self.do_a2b_conf:
+            self.gen_a2b_s = nn.ModuleList(self.gen_a2b_s)
+            self.dis_a2b_s = nn.ModuleList(self.dis_a2b_s)
+            if self.do_dis_council:
+                self.dis_council_a2b_s = nn.ModuleList(self.dis_council_a2b_s)
+        if self.do_b2a_conf:
+            self.gen_b2a_s = nn.ModuleList(self.gen_b2a_s)
+            self.dis_b2a_s = nn.ModuleList(self.dis_b2a_s)
+            if self.do_dis_council:
+                self.dis_council_b2a_s = nn.ModuleList(self.dis_council_b2a_s)
 
 
         # fix the noise used in sampling
@@ -134,20 +140,26 @@ class Council_Trainer(nn.Module):
             self.dis_council_opt_s = []
             self.dis_council_scheduler_s = []
 
-
+        dis_parms = []
+        gen_parms = []
+        dis_council_parms = []
         for i in range(self.council_size):
-            dis_parms = list(self.dis_a_s[i].parameters())
-            gen_parms = list(self.gen_a_s[i].parameters())
-            dis_parms += list(self.dis_b_s[i].parameters())
-            gen_parms += list(self.gen_b_s[i].parameters())
+            if self.do_a2b_conf:
+                dis_parms += list(self.dis_a2b_s[i].parameters())
+                gen_parms += list(self.gen_a2b_s[i].parameters())
+                if self.do_dis_council:
+                    dis_council_parms += list(self.dis_council_a2b_s[i].parameters())
+            if self.do_b2a_conf:
+                dis_parms += list(self.dis_b2a_s[i].parameters())
+                gen_parms += list(self.gen_b2a_s[i].parameters())
+                if self.do_dis_council:
+                    dis_council_parms += list(self.dis_council_b2a_s[i].parameters())
+
             dis_params_s.append(dis_parms)
             gen_params_s.append(gen_parms)
             if self.do_dis_council:
-                dis_council_parms = list(self.dis_council_a_s[i].parameters())
-                dis_council_parms += list(self.dis_council_b_s[i].parameters())
                 dis_council_params_s.append(dis_council_parms)
-            if self.do_mine_test and i == 0:
-                mine_test_net_parms = list(self.mine_test_net.parameters())
+
 
             self.dis_opt_s.append(torch.optim.Adam([p for p in dis_params_s[i] if p.requires_grad],
                                                    lr=lr, betas=(beta1, beta2),
@@ -160,29 +172,27 @@ class Council_Trainer(nn.Module):
                 self.dis_council_opt_s.append(torch.optim.Adam([p for p in dis_council_params_s[i] if p.requires_grad],
                                                                lr=lr, betas=(beta1, beta2),
                                                                weight_decay=hyperparameters['weight_decay']))
-            if self.do_mine_test and i == 0:
-                self.mine_test_opt = torch.optim.Adam([p for p in mine_test_net_parms if p.requires_grad],
-                                                               lr=lr, betas=(beta1, beta2),
-                                                               weight_decay=hyperparameters['weight_decay'])
+
             self.dis_scheduler_s.append(get_scheduler(self.dis_opt_s[i], hyperparameters))
             self.gen_scheduler_s.append(get_scheduler(self.gen_opt_s[i], hyperparameters))
             if self.do_dis_council:
                 self.dis_council_scheduler_s.append(get_scheduler(self.dis_council_opt_s[i], hyperparameters))
-            if self.do_mine_test and i == 0:
-                self.mine_test_net_scheduler = get_scheduler(self.mine_test_opt, hyperparameters)
+
 
         # Network weight initialization
         self.apply(weights_init(hyperparameters['init']))
         for i in range(self.council_size):
-            self.gen_a_s[i].apply(weights_init(hyperparameters['init']))
-            self.dis_a_s[i].apply(weights_init('gaussian'))
-            self.gen_b_s[i].apply(weights_init(hyperparameters['init']))
-            self.dis_b_s[i].apply(weights_init('gaussian'))
-            if self.do_dis_council:
-                self.dis_council_a_s[i].apply(weights_init('gaussian'))
-                self.dis_council_b_s[i].apply(weights_init('gaussian'))
-            if self.do_mine_test and i == 1:
-                self.mine_test_net_scheduler = get_scheduler(self.mine_test_opt, hyperparameters)
+            if self.do_a2b_conf:
+                self.gen_a2b_s[i].apply(weights_init(hyperparameters['init']))
+                self.dis_a2b_s[i].apply(weights_init('gaussian'))
+                if self.do_dis_council:
+                    self.dis_council_a2b_s[i].apply(weights_init('gaussian'))
+            if self.do_b2a_conf:
+                self.gen_b2a_s[i].apply(weights_init(hyperparameters['init']))
+                self.dis_b2a_s[i].apply(weights_init('gaussian'))
+                if self.do_dis_council:
+                    self.dis_council_b2a_s[i].apply(weights_init('gaussian'))
+
 
         # Load VGG model if needed
         self.vgg = None
@@ -224,189 +234,33 @@ class Council_Trainer(nn.Module):
 
     def forward(self, x_a, x_b=None, s_a=None, s_b=None):
         self.eval()
-
-        s_b = self.s_b if s_b is None else s_b
-        s_b = Variable(s_b)
-        x_ab_s = []
-        if self.do_both_sides:
+        if self.do_a2b_conf:
+            s_b = self.s_b if s_b is None else s_b
+            s_b = Variable(s_b)
+            x_ab_s = []
+        if self.do_b2a_conf:
             s_a = self.s_a if s_a is None else s_a
             s_a = Variable(s_a)
             x_ba_s = []
         for i in range(self.council_size):
-            c_a, s_a_fake = self.gen_a.encode(x_a)
-            x_ab_s.append(self.gen_b.decode(c_a, s_b, x_a))
-            if self.do_both_sides:
-                c_b, s_b_fake = self.gen_b.encode(x_b)
-                x_ba_s.append(self.gen_a.decode(c_b, s_a, x_b))
+            if self.do_a2b_conf:
+                c_a, s_a_fake = self.gen_a2b.encode(x_a)
+                x_ab_s.append(self.gen_a2b.decode(c_a, s_b, x_a))
+            if self.do_b2a_conf:
+                c_b, s_b_fake = self.gen_b2a.encode(x_b)
+                x_ba_s.append(self.gen_b2a.decode(c_b, s_a, x_b))
 
         self.train()
-        if self.do_both_sides:
+        if self.do_a2b_conf and self.do_b2a_conf:
             return x_ab_s, x_ba_s
+        elif self.do_b2a_conf:
+            return x_ba_s
         return x_ab_s
 
-    # def gen_update_for_thread(self, gen_a, gen_b, dis_a, dis_b, dis_council_a, dis_council_b, gen_opt, x_a, x_b, recon_criterion, compute_vgg_loss, vgg,
-    #                           hyperparameters):
-    #     loss_gen_recon_x_a, loss_gen_recon_x_b, loss_gen_total, loss_gen_recon_s_a, loss_gen_recon_s_b, \
-    #     loss_gen_recon_c_a, loss_gen_recon_c_b, loss_gen_cycrecon_x_a, loss_gen_cycrecon_x_b, \
-    #     loss_gen_adv_a, loss_gen_adv_b, loss_gen_vgg_a, loss_gen_vgg_b = [], [], [], [], [], [], [], [], [], [], [], [], []
-    #     s_a = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
-    #     s_b = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda())
-    #
-    #     # encode
-    #     c_a, s_a_prime = gen_a.encode(x_a)
-    #     c_b, s_b_prime = gen_b.encode(x_b)
-    #
-    #     # decode (within domain)
-    #     x_a_recon = gen_a.decode(c_a, s_a_prime)
-    #     x_b_recon = gen_b.decode(c_b, s_b_prime)
-    #
-    #     # decode (cross domain)
-    #     x_ba = gen_a.decode(c_b, s_a)
-    #     x_ab = gen_b.decode(c_a, s_b)
-    #
-    #     # encode again
-    #     c_b_recon, s_a_recon = gen_a.encode(x_ba)
-    #     c_a_recon, s_b_recon = gen_b.encode(x_ab)
-    #
-    #     # decode again (if needed)
-    #     x_aba = gen_a.decode(c_a_recon, s_a_prime) if hyperparameters['recon_x_cyc_w'] > 0 else None
-    #     x_bab = gen_b.decode(c_b_recon, s_b_prime) if hyperparameters['recon_x_cyc_w'] > 0 else None
-    #     loss_gen_total = 0
-    #
-    #     # reconstruction loss
-    #     if hyperparameters['recon_x_w'] != 0:
-    #         loss_gen_recon_x_a = (recon_criterion(x_a_recon, x_a))
-    #         loss_gen_recon_x_b = (recon_criterion(x_b_recon, x_b))
-    #         loss_gen_total += hyperparameters['recon_x_w'] * (
-    #                 loss_gen_recon_x_a + loss_gen_recon_x_b)
-    #     if hyperparameters['recon_s_w'] != 0:
-    #         loss_gen_recon_s_a = (recon_criterion(s_a_recon, s_a))
-    #         loss_gen_recon_s_b = (recon_criterion(s_b_recon, s_b))
-    #         loss_gen_total += hyperparameters['recon_s_w'] * (
-    #                 loss_gen_recon_s_a + loss_gen_recon_s_b)
-    #     if hyperparameters['recon_c_w'] != 0:
-    #         loss_gen_recon_c_a = (recon_criterion(c_a_recon, c_a))
-    #         loss_gen_recon_c_b = (recon_criterion(c_b_recon, c_b))
-    #         loss_gen_total += hyperparameters['recon_c_w'] * (
-    #                 loss_gen_recon_c_a + loss_gen_recon_c_b)
-    #     if hyperparameters['recon_x_cyc_w'] != 0:
-    #         loss_gen_cycrecon_x_a = (
-    #             recon_criterion(x_aba, x_a) if hyperparameters['recon_x_cyc_w'] > 0 else 0)
-    #         loss_gen_cycrecon_x_b = (
-    #             recon_criterion(x_bab, x_b) if hyperparameters['recon_x_cyc_w'] > 0 else 0)
-    #         loss_gen_total += hyperparameters['recon_x_cyc_w'] * (
-    #                 loss_gen_cycrecon_x_a + loss_gen_cycrecon_x_b)
-    #     # GAN loss
-    #     if hyperparameters['gan_w'] != 0:
-    #         loss_gen_adv_a = (dis_a.calc_gen_loss(x_ba))
-    #         loss_gen_adv_b = (dis_b.calc_gen_loss(x_ab))
-    #         if self.do_w_loss_matching:
-    #             self.los_hist_gan_a.append(loss_gen_adv_a)
-    #             self.los_hist_gan_a.popleft()
-    #             self.los_hist_gan_b.append(loss_gen_adv_b)
-    #             self.los_hist_gan_b.popleft()
-    #             self.w_match_a = np.mean(self.los_hist_council_a) / np.mean(self.los_hist_gan_a)
-    #             self.w_match_b = np.mean(self.los_hist_council_b) / np.mean(self.los_hist_gan_b)
-    #
-    #         loss_gen_total += hyperparameters['gan_w'] * (
-    #                 self.w_match_a * loss_gen_adv_a + self.w_match_b * loss_gen_adv_b)
-    #     # domain-invariant perceptual loss
-    #     if hyperparameters['vgg_w'] != 0:
-    #         loss_gen_vgg_a = (
-    #             compute_vgg_loss(vgg, x_ba, x_b) if hyperparameters['vgg_w'] > 0 else 0)
-    #         loss_gen_vgg_b = (
-    #             compute_vgg_loss(vgg, x_ab, x_a) if hyperparameters['vgg_w'] > 0 else 0)
-    #         loss_gen_total += hyperparameters['vgg_w'] * (
-    #                 loss_gen_vgg_a + loss_gen_vgg_b)
-    #
-    #
-    #
-    #
-    #
-    #
-    #     #############################################################################################
-    #     #############################################################################################
-    #     # Council loss
-    #     do_council_discriminator = hyperparameters['council']['do_council_dis']
-    #     do_ads_council_loss = hyperparameters['council']['do_ads_council_loss']
-    #
-    #     onOffCycle = hyperparameters['council']['flipOnOff_On_iteration'] + hyperparameters['council'][
-    #         'flipOnOff_Off_iteration']
-    #     currIterCyc = hyperparameters['iteration'] % onOffCycle
-    #     if hyperparameters['council']['flipOnOff_start_with']:
-    #         startCyc = hyperparameters['council']['flipOnOff_On_iteration']
-    #     else:
-    #         startCyc = hyperparameters['council']['flipOnOff_Off_iteration']
-    #
-    #     do_council_loss = hyperparameters['council']['flipOnOff_start_with'] if (currIterCyc < startCyc) \
-    #         else not hyperparameters['council']['flipOnOff_start_with']
-    #     if not hyperparameters['council']['flipOnOff']:
-    #         do_council_loss = hyperparameters['council']['flipOnOff_start_with']
-    #
-    #     council_loss_ba = 0
-    #     council_loss_ab = 0
-    #     # for i in range(self.council_size):
-    #     if hyperparameters['council_w'] != 0 and do_council_loss and hyperparameters['council']['council_size'] > 1:
-    #
-    #
-    #         if do_council_discriminator:
-    #             dis_council_loss_ab = hyperparameters['council_w'] * dis_council_b.calc_gen_loss(
-    #                 x_ab, x_a)
-    #             dis_council_loss_ba = hyperparameters['council_w'] * dis_council_a.calc_gen_loss(
-    #                 x_ba, x_b)
-    #             council_loss_ab += dis_council_loss_ab
-    #             council_loss_ba += dis_council_loss_ba
-    #             # print('dis_council_loss_ab: ' + str(dis_council_loss_ab.item()))
-    #             # print('dis_council_loss_ba: ' + str(dis_council_loss_ba.item()))
-    #         if do_ads_council_loss:  # ads loss without discriminetor
-    #             raise NotImplemented
-    #             # tmp = list(range(0, i)) + list(range(i + 1, self.council_size))
-    #             # comper_to_i = random.choice(tmp)
-    #             # abs_council_loss_ab = hyperparameters['council_abs_w'] * self.council_basic_criterion(x_ba_s[i],
-    #             #                                                                                       x_ba_s[
-    #             #                                                                                           comper_to_i].detach())
-    #             # abs_council_loss_ba = hyperparameters['council_abs_w'] * self.council_basic_criterion(x_ab_s[i],
-    #             #                                                                                       x_ab_s[
-    #             #                                                                                           comper_to_i].detach())
-    #             # self.council_loss_ba_s[i] += abs_council_loss_ab
-    #             # self.council_loss_ab_s[i] += abs_council_loss_ba
-    #             # # print('abs_council_loss_ab: ' + str(abs_council_loss_ab.item()))
-    #             # # print('abs_council_loss_ba: ' + str(abs_council_loss_ba.item()))
-    #         loss_gen_total += council_loss_ba + council_loss_ab
-    #
-    #
-    #     # backpropogation
-    #
-    #
-    #     loss_gen_total.backward()
-    #     gen_opt.step()  # TODO
-    #
-    #         # if type(self.council_loss_ba_s[i]) is not int:
-    #         #     if i == 0:
-    #         #         print('**********************************************')
-    #         #     print('=======================')
-    #         #     print('gan_w * loss_gen_adv_a_s[' + str(i) + '] = ' + str(
-    #         #         (hyperparameters['gan_w'] * self.loss_gen_adv_a_s[i]).item()))
-    #         #     print('gan_w * loss_gen_adv_b_s[' + str(i) + '] = ' + str(
-    #         #         (hyperparameters['gan_w'] * self.loss_gen_adv_b_s[i]).item()))
-    #         #     print('council_w * council_loss_ba_s[' + str(i) + '] = ' + str(
-    #         #         (hyperparameters['gan_w'] * self.council_loss_ba_s[i]).item()))
-    #         #     print('council_w * council_loss_ab_s[' + str(i) + '] = ' + str(
-    #         #         (hyperparameters['gan_w'] * self.council_loss_ab_s[i]).item()))
-    #         #     print('=======================')
-    #     #############################################################################################
-    #     #############################################################################################
-    #
-    #
-    #     return loss_gen_recon_x_a, loss_gen_recon_x_b, loss_gen_total, loss_gen_recon_s_a, loss_gen_recon_s_b, \
-    #            loss_gen_recon_c_a, loss_gen_recon_c_b, loss_gen_cycrecon_x_a, loss_gen_cycrecon_x_b, \
-    #            loss_gen_adv_a, loss_gen_adv_b, loss_gen_vgg_a, loss_gen_vgg_b, council_loss_ba, council_loss_ab
 
     def gen_update(self, x_a, x_b, hyperparameters, iterations=0):
         for gen_opt in self.gen_opt_s:
             gen_opt.zero_grad()
-        # init variables
-
         s_a = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
         s_b = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda())
         c_a_s = []
@@ -445,128 +299,6 @@ class Council_Trainer(nn.Module):
         self.loss_gen_vgg_b_s = []
         self.loss_gen_total_s = []
 
-
-        # # if do_therding:
-        # # therdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherding
-        # # therdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherding
-        # # therdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherding
-        #
-        #
-        #
-        #
-        # # t_test_fid = threading.Thread(target=test_fid,
-        # #                               args=([dataset1, dataset2, iterations, train_writer, name, m1, s1, False]))
-        #
-        # ## TESTSTTTTTTTTT
-        # ## TESTSTTTTTTTTT
-        # import time
-        # gen_a_threads = []
-        # gen_b_threads = []
-        #
-        # ### test 1
-        # # start = time.time()
-        # # pool = ThreadPool(self.council_size)
-        # # for i in range(self.council_size):
-        # #     # encode
-        # #     async_result_a = pool.apply_async(self.gen_a_s[i].encode, args=([x_a]))
-        # #     async_result_b = pool.apply_async(self.gen_b_s[i].encode, args=([x_b]))
-        # #     gen_a_threads.append(async_result_a)
-        # #     gen_b_threads.append(async_result_b)
-        # #
-        # # for t_a, t_b in zip(gen_a_threads, gen_b_threads):
-        # #     c_a, s_a_prime = t_a.get()
-        # #     c_b, s_b_prime = t_b.get()
-        # #
-        # #     c_a_s.append(c_a)
-        # #     s_a_prime_s.append(s_a_prime)
-        # #     c_b_s.append(c_a)
-        # #     s_b_prime_s.append(s_b_prime)
-        # #
-        # # end = time.time()
-        # # print('1 TEST ------------ time: ' + str(end - start))
-        #
-        #
-        # ### test 2
-        # # start = time.time()
-        # # for i in range(self.council_size):
-        # #     c_a, s_a_prime = self.gen_a_s[i].encode(x_a)
-        # #     c_b, s_b_prime = self.gen_b_s[i].encode(x_b)
-        # #
-        # #     c_a_s.append(c_a)
-        # #     s_a_prime_s.append(s_a_prime)
-        # #     c_b_s.append(c_a)
-        # #     s_b_prime_s.append(s_b_prime)
-        # #
-        # # end = time.time()
-        # # print('2 TEST ------------ time: ' + str(end - start))
-        #
-        #
-        #
-        # ## TESTSTTTTTTTTT
-        # ## TESTSTTTTTTTTT
-        # avreg3 = 0
-        # avreg4 = 0
-        # pool2 = ThreadPool(self.council_size)
-        # for kk in range(20):
-        #     print('test3:' + str(kk))
-        #
-        #
-        #     gan_threads = []
-        #     start = time.time()
-        #     start2 = time.time()
-        #     for i in range(self.council_size):
-        #         async_result = pool2.apply_async(self.gen_update_for_thread, args=([self.gen_a_s[i], self.gen_b_s[i],
-        #                                                                            self.dis_a_s[i], self.dis_b_s[i],
-        #                                                                             self.dis_council_a_s[i], self.dis_council_b_s[i],
-        #                                                                             self.gen_opt_s[i],
-        #                                                                            x_a, x_b, self.recon_criterion,
-        #                                                                            self.compute_vgg_loss, self.vgg,
-        #                                                                            hyperparameters]))
-        #         gan_threads.append(async_result)
-        #         print('start_get_result: ' + str(i))
-        #
-        #
-        #     curr_gan_res_s = []
-        #     for i, t_res in enumerate(gan_threads):
-        #
-        #         curr_gan_res = t_res.get()
-        #         curr_gan_res_s.append(curr_gan_res)
-        #         print('finish_get_result: ' + str(i))
-        #
-        #     for gen_opt in self.gen_opt_s:
-        #         gen_opt.zero_grad()
-        #
-        #     end = time.time()
-        #     time3 = end - start
-        #     avreg3 += time3
-        #     print('3 TEST ------------ time: ' + str(end - start))
-        #
-        # for kk in range(20):
-        #     print('test4:' + str(kk))
-        #
-        #     start = time.time()
-        #     for i in range(self.council_size):
-        #         curr_gan_res = self.gen_update_for_thread(self.gen_a_s[i], self.gen_b_s[i], self.dis_a_s[i], self.dis_b_s[i],
-        #                                                   self.dis_council_a_s[i], self.dis_council_b_s[i], self.gen_opt_s[i],
-        #                                                   x_a, x_b, self.recon_criterion, self.compute_vgg_loss,
-        #                                                   self.vgg
-        #                                                   , hyperparameters)
-        #         curr_gan_res_s.append(curr_gan_res)
-        #
-        #     for gen_opt in self.gen_opt_s:
-        #         gen_opt.zero_grad()
-        #
-        #     end = time.time()
-        #     time4 = end - start
-        #     avreg4 += time4
-        #     print('4 TEST ------------ time: ' + str(end - start))
-        #
-        # print('avg 3 : ' + str(avreg3 / 20))
-        # print('avg 4 : ' + str(avreg4 / 20))
-        # # therdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherding
-        #     # therdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherding
-        #     # therdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherdingtherding
-        #
 
 
         for i in range(self.council_size):
