@@ -1,2 +1,2 @@
 # GAN-Council
-our implementation for the paper Breaking the Cycle - Colleagues are all you need 
+official implementation for our paper Breaking the Cycle - Colleagues are all you need 
