@@ -564,24 +564,26 @@ class Council_Trainer(nn.Module):
         target_fea = vgg(target_vgg)
         return torch.mean((self.instancenorm(img_fea) - self.instancenorm(target_fea)) ** 2)
 
-    def sample(self, x_a, x_b=None, s_a=None, s_b=None, council_member_to_sample_vec=None, return_mask=True):
+    def sample(self, x_a=None, x_b=None, s_a=None, s_b=None, council_member_to_sample_vec=None, return_mask=True):
+        # council_member_to_sample_vec = list of indexes of council members to sample with
         self.eval()
-        x_a_s = []
-        x_b_s = []
+        if self.do_a2b_conf:
+            x_a_s = []
+            s_b = self.s_b if s_b is None else s_b
+            s_b1 = Variable(s_b)
+            s_b2 = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
+            x_a_recon, x_ab1, x_ab2, x_ab1_mask = [], [], [], []
+        if self.do_b2a_conf:
+            x_b_s = []
+            s_a = self.s_a if s_a is None else s_a
+            s_a1 = Variable(s_a)
+            s_a2 = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
+            x_b_recon, x_ba1, x_ba2, x_ba1_mask = [], [], [], []
 
-        s_a = self.s_a if s_a is None else s_a
-        s_b = self.s_b if s_b is None else s_b
-
-        s_a1 = Variable(s_a)
-        s_b1 = Variable(s_b)
-        s_a2 = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
-        s_b2 = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
-        x_a_recon, x_b_recon, x_ba1, x_ba2, x_ab1, x_ab2 = [], [], [], [], [], []
-        x_ba1_mask, x_ab1_mask = [], []
         council_member_to_sample_vec = range(self.council_size) if council_member_to_sample_vec is None else council_member_to_sample_vec
         for i in range(x_a.size(0)):
             for j in council_member_to_sample_vec:
-                if x_b is not None:
+                if self.do_b2a_conf:
                     x_b_s.append(x_b[i].unsqueeze(0))
                     c_b, s_b_fake = self.gen_b_s[j].encode(x_b[i].unsqueeze(0))
                     if not return_mask:
@@ -593,52 +595,56 @@ class Council_Trainer(nn.Module):
                         x_ba1_mask.append(x_ba1_mask_tmp)
                         x_ba1.append(x_ba1_tmp)
                         x_ba2.append(self.gen_a_s[j].decode(c_b, s_a2[i].unsqueeze(0), x_b[i].unsqueeze(0)))
+                if self.do_a2b_conf:
+                    x_a_s.append(x_a[i].unsqueeze(0))
+                    c_a, s_a_fake = self.gen_a_s[j].encode(x_a[i].unsqueeze(0))
+                    if not return_mask:
+                        x_a_recon.append(self.gen_a_s[j].decode(c_a, s_a_fake, x_a[i].unsqueeze(0)))
+                        x_ab1.append(self.gen_b_s[j].decode(c_a, s_b1[i].unsqueeze(0), x_a[i].unsqueeze(0)))
+                        x_ab2.append(self.gen_b_s[j].decode(c_a, s_b2[i].unsqueeze(0), x_a[i].unsqueeze(0)))
+                    else:
+                        x_ab1_tmp, x_ab1_mask_tmp = self.gen_b_s[j].decode(c_a, s_b1[i].unsqueeze(0), x_a[i].unsqueeze(0), return_mask=return_mask)
+                        do_double = False
+                        if do_double:
+                            c_a_double, s_a_fake = self.gen_a_s[j].encode(x_ab1_tmp)
+                            x_ab1_tmp, x_ab1_mask_tmp = self.gen_b_s[j].decode(c_a_double, s_b1[i].unsqueeze(0),
+                                                                               x_ab1_tmp,
+                                                                               return_mask=return_mask)
 
-                x_a_s.append(x_a[i].unsqueeze(0))
-                c_a, s_a_fake = self.gen_a_s[j].encode(x_a[i].unsqueeze(0))
-                if not return_mask:
-                    x_a_recon.append(self.gen_a_s[j].decode(c_a, s_a_fake, x_a[i].unsqueeze(0)))
-                    x_ab1.append(self.gen_b_s[j].decode(c_a, s_b1[i].unsqueeze(0), x_a[i].unsqueeze(0)))
-                    x_ab2.append(self.gen_b_s[j].decode(c_a, s_b2[i].unsqueeze(0), x_a[i].unsqueeze(0)))
-                else:
-                    x_ab1_tmp, x_ab1_mask_tmp = self.gen_b_s[j].decode(c_a, s_b1[i].unsqueeze(0), x_a[i].unsqueeze(0), return_mask=return_mask)
-                    do_double = False
-                    if do_double:
-                        c_a_double, s_a_fake = self.gen_a_s[j].encode(x_ab1_tmp)
-                        x_ab1_tmp, x_ab1_mask_tmp = self.gen_b_s[j].decode(c_a_double, s_b1[i].unsqueeze(0),
-                                                                           x_ab1_tmp,
-                                                                           return_mask=return_mask)
-                        #Triple
-                        # c_a_double, s_a_fake = self.gen_a_s[j].encode(x_ab1_tmp)
-                        # x_ab1_tmp, x_ab1_mask_tmp = self.gen_b_s[j].decode(c_a_double, s_b1[i].unsqueeze(0),
-                        #                                                    x_ab1_tmp,
-                        #                                                    return_mask=return_mask)
+                        x_ab1_mask.append(x_ab1_mask_tmp)
+                        x_ab1.append(x_ab1_tmp)
+                        x_ab2.append(self.gen_b_s[j].decode(c_a, s_b2[i].unsqueeze(0), x_a[i].unsqueeze(0)))
 
-
-
-                    x_ab1_mask.append(x_ab1_mask_tmp)
-                    x_ab1.append(x_ab1_tmp)
-                    x_ab2.append(self.gen_b_s[j].decode(c_a, s_b2[i].unsqueeze(0), x_a[i].unsqueeze(0)))
-
-        if x_b is not None:
+        if self.do_b2a_conf:
             x_b_s = torch.cat(x_b_s)
             x_ba1, x_ba2 = torch.cat(x_ba1), torch.cat(x_ba2)
             if not return_mask:
                 x_b_recon = torch.cat(x_b_recon)
             else:
                 x_ba1_mask = torch.cat(x_ba1_mask)
-        x_a_s = torch.cat(x_a_s)
-        x_ab1, x_ab2 = torch.cat(x_ab1), torch.cat(x_ab2)
-        if not return_mask:
-            x_a_recon = torch.cat(x_a_recon)
-        else:
-            x_ab1_mask = torch.cat(x_ab1_mask)
+        if self.do_a2b_conf:
+            x_a_s = torch.cat(x_a_s)
+            x_ab1, x_ab2 = torch.cat(x_ab1), torch.cat(x_ab2)
+            if not return_mask:
+                x_a_recon = torch.cat(x_a_recon)
+            else:
+                x_ab1_mask = torch.cat(x_ab1_mask)
 
         self.train()
         if not return_mask:
-            return x_a_s, x_a_recon, x_ab1, x_ab2, x_b_s, x_b_recon, x_ba1, x_ba2
+            if self.do_a2b_conf and self.do_b2a_conf:
+                return x_a_s, x_a_recon, x_ab1, x_ab2, x_b_s, x_b_recon, x_ba1, x_ba2
+            if self.do_a2b_conf:
+                return x_a_s, x_a_recon, x_ab1, x_ab2, None, None, None, None
+            if self.do_b2a_conf:
+                return None, None, None, None, x_b_s, x_b_recon, x_ba1, x_ba2
         else:
-            return x_a_s, x_ab1_mask, x_ab1, x_ab2, x_b_s, x_ba1_mask, x_ba1, x_ba2
+            if self.do_a2b_conf and self.do_b2a_conf:
+                return x_a_s, x_ab1_mask, x_ab1, x_ab2, x_b_s, x_ba1_mask, x_ba1, x_ba2
+            if self.do_a2b_conf:
+                return x_a_s, x_ab1_mask, x_ab1, x_ab2, None, None, None, None
+            if self.do_b2b_conf:
+                return None, None, None, None, x_b_s, x_ba1_mask, x_ba1, x_ba2
 
 
     def dis_update(self, x_a, x_b, hyperparameters):
