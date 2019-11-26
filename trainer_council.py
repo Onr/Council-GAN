@@ -2,7 +2,7 @@
 Copyright (C) 2017 NVIDIA Corporation.  All rights reserved.
 Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 """
-from networks import AdaINGen, MsImageDis, MsImageDisCouncil, VAEGen, MINEnet
+from networks import AdaINGen, MsImageDis, MsImageDisCouncil
 from utils import weights_init, get_model_list, vgg_preprocess, load_vgg16, get_scheduler
 from torch.autograd import Variable
 import torch
@@ -24,10 +24,10 @@ class Council_Trainer(nn.Module):
         # Initiate the networks
         self.council_size = hyperparameters['council']['council_size']
         self.council_size_conf = self.council_size
-        self.gen_a_s = []
-        self.gen_b_s = []
-        self.dis_a_s = []
-        self.dis_b_s = []
+        self.gen_a2b_s = []
+        self.gen_b2a_s = []
+        self.dis_a2b_s = []
+        self.dis_b2a_s = []
         self.do_dis_council = hyperparameters['council_w'] != 0
         self.do_ads_council_loss = hyperparameters['council_abs_w'] != 0
         self.numberOfCouncil_dis_relative_iteration_conf = hyperparameters['council']['numberOfCouncil_dis_relative_iteration']
@@ -78,8 +78,8 @@ class Council_Trainer(nn.Module):
         self.do_council_loss = None
 
         if self.do_dis_council:
-            self.dis_council_b_s = []
-            self.dis_council_a_s = []
+            self.dis_council_a2b_s = []
+            self.dis_council_b2a_s = []
 
         # defining all the networks
         for i in range(self.council_size):
@@ -299,7 +299,6 @@ class Council_Trainer(nn.Module):
         self.loss_gen_total_s = []
 
 
-
         for i in range(self.council_size):
             # encode
             if self.do_a2b_conf:
@@ -442,10 +441,9 @@ class Council_Trainer(nn.Module):
                         self.los_hist_gan_b2a_s[i].popleft()
 
                 if hyperparameters['do_a2b']:
-                    self.loss_gen_total_s[i] += hyperparameters['gan_w'] * self.loss_gen_adv_b_s[i]
+                    self.loss_gen_total_s[i] += hyperparameters['gan_w'] * self.loss_gen_adv_a2b_s[i]
                 if hyperparameters['do_b2a']:
-                    self.loss_gen_total_s[i] += hyperparameters['gan_w'] * self.loss_gen_adv_a_s[i]
-
+                    self.loss_gen_total_s[i] += hyperparameters['gan_w'] * self.loss_gen_adv_b2a_s[i]
 
             # domain-invariant perceptual loss
             if hyperparameters['vgg_w'] != 0:
@@ -479,28 +477,28 @@ class Council_Trainer(nn.Module):
                 #     print('do council loss: True')
                 if self.do_a2b_conf:
                     self.council_loss_ab_s.append(0)
-                if self.o_b2a_conf:
+                if self.do_b2a_conf:
                     self.council_loss_ba_s.append(0)
 
 
                 if self.do_dis_council:  # do council discriminator
                     if hyperparameters['do_a2b']:
-                        dis_council_loss_ab = self.dis_council_b_s[i].calc_gen_loss(x_ab_s[i], x_a)
+                        dis_council_loss_ab = self.dis_council_a2b_s[i].calc_gen_loss(x_ab_s[i], x_a)
                     else:
                         dis_council_loss_ab = 0
                     if hyperparameters['do_b2a']:
-                        dis_council_loss_ba = self.dis_council_a_s[i].calc_gen_loss(x_ba_s[i], x_b)
+                        dis_council_loss_ba = self.dis_council_b2a_s[i].calc_gen_loss(x_ba_s[i], x_b)
                     else:
                         dis_council_loss_ba = 0
                     if self.do_w_loss_matching:
                         if hyperparameters['do_a2b']:
-                            self.los_hist_council_b_s[i].append(dis_council_loss_ab.detach().cpu().numpy())
-                            self.los_hist_council_b_s[i].popleft()
+                            self.los_hist_council_a2b_s[i].append(dis_council_loss_ab.detach().cpu().numpy())
+                            self.los_hist_council_a2b_s[i].popleft()
                             self.w_match_a2b_conf = np.mean(self.los_hist_gan_a2b_s[i]) / np.mean(self.los_hist_council_a2b_s[i])
                             dis_council_loss_ab *= self.w_match_a2b_conf
                         if hyperparameters['do_b2a']:
-                            self.los_hist_council_a_s[i].append(dis_council_loss_ba.detach().cpu().numpy())
-                            self.los_hist_council_a_s[i].popleft()
+                            self.los_hist_council_b2a_s[i].append(dis_council_loss_ba.detach().cpu().numpy())
+                            self.los_hist_council_b2a_s[i].popleft()
                             self.w_match_b2a_conf = np.mean(self.los_hist_gan_b2a_s[i]) / np.mean(self.los_hist_council_b2a_s[i])
                             dis_council_loss_ba *= self.w_match_b2a_conf
 
@@ -537,17 +535,10 @@ class Council_Trainer(nn.Module):
                     if self.do_b2a_conf:
                         self.council_loss_ba_s[i] += abs_council_loss_ab
 
-                if hyperparameters['council']['useJudge'] and i == 0:
-                    if hyperparameters['do_a2b']:
-                        self.loss_gen_total_s[i] = self.council_loss_ab_s[i]  # only update based on the council loss
-                    if hyperparameters['do_b2a']:
-                        self.loss_gen_total_s[i] = self.council_loss_ba_s[i]
-                else:
-                    if hyperparameters['do_a2b']:
-                        self.loss_gen_total_s[i] += self.council_loss_ab_s[i]
-                    if hyperparameters['do_b2a']:
+                if hyperparameters['do_a2b']:
+                    self.loss_gen_total_s[i] += self.council_loss_ab_s[i]
+                if hyperparameters['do_b2a']:
                         self.loss_gen_total_s[i] += self.council_loss_ba_s[i]
-
 
             else:
                 if self.do_a2b_conf:
@@ -587,35 +578,35 @@ class Council_Trainer(nn.Module):
             for j in council_member_to_sample_vec:
                 if self.do_b2a_conf:
                     x_b_s.append(x_b[i].unsqueeze(0))
-                    c_b, s_b_fake = self.gen_b_s[j].encode(x_b[i].unsqueeze(0))
+                    c_b, s_b_fake = self.gen_b2a_s[j].encode(x_b[i].unsqueeze(0))
                     if not return_mask:
-                        x_b_recon.append(self.gen_b_s[j].decode(c_b, s_b_fake, x_b[i].unsqueeze(0)))
-                        x_ba1.append(self.gen_a_s[j].decode(c_b, s_a1[i].unsqueeze(0), x_b[i].unsqueeze(0)))
-                        x_ba2.append(self.gen_a_s[j].decode(c_b, s_a2[i].unsqueeze(0), x_b[i].unsqueeze(0)))
+                        x_b_recon.append(self.gen_b2a_s[j].decode(c_b, s_b_fake, x_b[i].unsqueeze(0)))
+                        x_ba1.append(self.gen_b2a_s[j].decode(c_b, s_a1[i].unsqueeze(0), x_b[i].unsqueeze(0)))
+                        x_ba2.append(self.gen_b2a_s[j].decode(c_b, s_a2[i].unsqueeze(0), x_b[i].unsqueeze(0)))
                     else:
-                        x_ba1_tmp, x_ba1_mask_tmp = self.gen_a_s[j].decode(c_b, s_a1[i].unsqueeze(0), x_b[i].unsqueeze(0), return_mask=return_mask)
+                        x_ba1_tmp, x_ba1_mask_tmp = self.gen_b2a_s[j].decode(c_b, s_a1[i].unsqueeze(0), x_b[i].unsqueeze(0), return_mask=return_mask)
                         x_ba1_mask.append(x_ba1_mask_tmp)
                         x_ba1.append(x_ba1_tmp)
-                        x_ba2.append(self.gen_a_s[j].decode(c_b, s_a2[i].unsqueeze(0), x_b[i].unsqueeze(0)))
+                        x_ba2.append(self.gen_b2a_s[j].decode(c_b, s_a2[i].unsqueeze(0), x_b[i].unsqueeze(0)))
                 if self.do_a2b_conf:
                     x_a_s.append(x_a[i].unsqueeze(0))
-                    c_a, s_a_fake = self.gen_a_s[j].encode(x_a[i].unsqueeze(0))
+                    c_a, s_a_fake = self.gen_a2b_s[j].encode(x_a[i].unsqueeze(0))
                     if not return_mask:
-                        x_a_recon.append(self.gen_a_s[j].decode(c_a, s_a_fake, x_a[i].unsqueeze(0)))
-                        x_ab1.append(self.gen_b_s[j].decode(c_a, s_b1[i].unsqueeze(0), x_a[i].unsqueeze(0)))
-                        x_ab2.append(self.gen_b_s[j].decode(c_a, s_b2[i].unsqueeze(0), x_a[i].unsqueeze(0)))
+                        x_a_recon.append(self.gen_a2b_s[j].decode(c_a, s_a_fake, x_a[i].unsqueeze(0)))
+                        x_ab1.append(self.gen_a2b_s[j].decode(c_a, s_b1[i].unsqueeze(0), x_a[i].unsqueeze(0)))
+                        x_ab2.append(self.gen_a2b_s[j].decode(c_a, s_b2[i].unsqueeze(0), x_a[i].unsqueeze(0)))
                     else:
-                        x_ab1_tmp, x_ab1_mask_tmp = self.gen_b_s[j].decode(c_a, s_b1[i].unsqueeze(0), x_a[i].unsqueeze(0), return_mask=return_mask)
+                        x_ab1_tmp, x_ab1_mask_tmp = self.gen_a2b_s[j].decode(c_a, s_b1[i].unsqueeze(0), x_a[i].unsqueeze(0), return_mask=return_mask)
                         do_double = False
                         if do_double:
-                            c_a_double, s_a_fake = self.gen_a_s[j].encode(x_ab1_tmp)
-                            x_ab1_tmp, x_ab1_mask_tmp = self.gen_b_s[j].decode(c_a_double, s_b1[i].unsqueeze(0),
+                            c_a_double, s_a_fake = self.gen_a2b_s[j].encode(x_ab1_tmp)
+                            x_ab1_tmp, x_ab1_mask_tmp = self.gen_a2b_s[j].decode(c_a_double, s_b1[i].unsqueeze(0),
                                                                                x_ab1_tmp,
                                                                                return_mask=return_mask)
 
                         x_ab1_mask.append(x_ab1_mask_tmp)
                         x_ab1.append(x_ab1_tmp)
-                        x_ab2.append(self.gen_b_s[j].decode(c_a, s_b2[i].unsqueeze(0), x_a[i].unsqueeze(0)))
+                        x_ab2.append(self.gen_a2b_s[j].decode(c_a, s_b2[i].unsqueeze(0), x_a[i].unsqueeze(0)))
 
         if self.do_b2a_conf:
             x_b_s = torch.cat(x_b_s)
@@ -645,15 +636,12 @@ class Council_Trainer(nn.Module):
                 return x_a_s, x_ab1_mask, x_ab1, x_ab2, x_b_s, x_ba1_mask, x_ba1, x_ba2
             if self.do_a2b_conf:
                 return x_a_s, x_ab1_mask, x_ab1, x_ab2, None, None, None, None
-            if self.do_b2b_conf:
+            if self.do_b2a_conf:
                 return None, None, None, None, x_b_s, x_ba1_mask, x_ba1, x_ba2
 
-
     def dis_update(self, x_a=None, x_b=None, hyperparameters=None):
-        if self.do_a2b_conf:
-            x_a_dis = x_a if not hyperparameters['dis']['do_Dis_only_gray'] else torch.sum(x_a.detach(), 1).unsqueeze(1).repeat(1, hyperparameters['input_dim_a'], 1, 1) / hyperparameters['input_dim_a']
-        if self.do_b2a_conf:
-            x_b_dis = x_b if not hyperparameters['dis']['do_Dis_only_gray'] else torch.sum(x_b.detach(), 1).unsqueeze(1).repeat(1, hyperparameters['input_dim_b'], 1, 1) / hyperparameters['input_dim_b']
+        x_a_dis = x_a if not hyperparameters['dis']['do_Dis_only_gray'] else torch.sum(x_a.detach(), 1).unsqueeze(1).repeat(1, hyperparameters['input_dim_a'], 1, 1) / hyperparameters['input_dim_a']
+        x_b_dis = x_b if not hyperparameters['dis']['do_Dis_only_gray'] else torch.sum(x_b.detach(), 1).unsqueeze(1).repeat(1, hyperparameters['input_dim_b'], 1, 1) / hyperparameters['input_dim_b']
         for dis_opt in self.dis_opt_s:
             dis_opt.zero_grad()
         if self.do_a2b_conf:
@@ -664,11 +652,6 @@ class Council_Trainer(nn.Module):
             self.loss_dis_b2a_s = []
         self.loss_dis_total_s = []
         for i in range(self.council_size):
-            if hyperparameters['council']['useJudge'] and i == 0:  # regular discriminator is not needed for the judge
-                self.loss_dis_a2b_s.append(0)
-                self.loss_dis_b2a_s.append(0)
-                self.loss_dis_total_s.append(0)
-                continue
             i_gen = i
             if hyperparameters['dis']['useRandomGen']:
                 i_gen = np.random.randint(self.council_size)
@@ -686,12 +669,9 @@ class Council_Trainer(nn.Module):
             # D loss
             if hyperparameters['do_a2b']:
                 self.loss_dis_a2b_s.append(self.dis_a2b_s[i].calc_dis_loss(x_ab.detach(), x_b_dis))
-            else:
-                self.loss_dis_b_s.append(0)
             if hyperparameters['do_b2a']:
                 self.loss_dis_b2a_s.append(self.dis_b2a_s[i].calc_dis_loss(x_ba.detach(), x_a_dis))
-            else:
-                self.loss_dis_b2a_s.append(0)
+
 
             self.loss_dis_total_s.append(0)
             if hyperparameters['do_a2b']:
@@ -825,12 +805,13 @@ class Council_Trainer(nn.Module):
         for i in range(self.council_size):
             last_model_name = get_model_list(checkpoint_dir, "gen_" + str(i))
             if last_model_name is not None:
-                print(last_model_name)
+                last_model_name = last_model_name.replace('a2b_gen_', 'gen_').replace('b2a_gen_', 'gen_')
+                print('loading: ' + last_model_name)
                 if self.do_a2b_conf:
-                    state_dict = torch.load('a2b_' + last_model_name)
+                    state_dict = torch.load(last_model_name.replace('gen_', 'a2b_gen_'))
                     self.gen_a2b_s[i].load_state_dict(state_dict['a2b'])
                 if self.do_b2a_conf:
-                    state_dict = torch.load('b2a_' + last_model_name)
+                    state_dict = torch.load(last_model_name.replace('gen_', 'b2a_gen_'))
                     self.gen_b2a_s[i].load_state_dict(state_dict['b2a'])
 
                 iterations = int(last_model_name[-11:-3])
@@ -840,11 +821,13 @@ class Council_Trainer(nn.Module):
             # Load discriminators
             last_model_name = get_model_list(checkpoint_dir, "dis_" + str(i))
             if last_model_name is not None:
+                last_model_name = last_model_name.replace('a2b_dis_', 'dis_').replace('b2a_dis_', 'dis_')
+                print('loading: ' + last_model_name)
                 if self.do_a2b_conf:
-                    state_dict = torch.load('a2b_' + last_model_name)
+                    state_dict = torch.load(last_model_name.replace('dis_', 'a2b_dis_'))
                     self.dis_a2b_s[i].load_state_dict(state_dict['a2b'])
                 if self.do_b2a_conf:
-                    state_dict = torch.load('b2a_' + last_model_name)
+                    state_dict = torch.load(last_model_name.replace('dis_', 'b2a_dis_'))
                     self.dis_b2a_s[i].load_state_dict(state_dict['b2a'])
             else:
                 warnings.warn('Failed to find dis checkpoint, did not load model')
@@ -852,12 +835,15 @@ class Council_Trainer(nn.Module):
             if self.do_dis_council:
                 try:
                     last_model_name = get_model_list(checkpoint_dir, "dis_council_" + str(i))
+                    print('loading: ' + last_model_name)
                     if last_model_name is not None:
+                        last_model_name = last_model_name.replace('a2b_dis_council_', 'dis_council_').replace('b2a_dis_council_', 'dis_council_')
+
                         if self.do_a2b_conf:
-                            state_dict = torch.load('a2b_' + last_model_name)
+                            state_dict = torch.load(last_model_name.replace('dis_council_', 'a2b_dis_council_'))
                             self.dis_council_a2b_s[i].load_state_dict(state_dict['a2b'])
                         if self.do_b2a_conf:
-                            state_dict = torch.load('b2a_' + last_model_name)
+                            state_dict = torch.load(last_model_name.replace('dis_council_', 'b2a_dis_council_'))
                             self.dis_council_b2a_s[i].load_state_dict(state_dict['b2a'])
                     else:
                         warnings.warn('Failed to find dis checkpoint, did not load model')
@@ -894,25 +880,23 @@ class Council_Trainer(nn.Module):
                 dis_council_name = os.path.join(snapshot_dir, 'dis_council_' + str(i) + '_%08d.pt' % (iterations + 1))
             opt_name = os.path.join(snapshot_dir, 'optimizer_' + str(i) + '.pt')
             if self.do_a2b_conf:
-                torch.save({'a2b': self.gen_a2b_s[i].state_dict()}, 'a2b_' + gen_name)
-                torch.save({'a2b': self.dis_a2b_s[i].state_dict()}, 'a2b_' + dis_name)
+                torch.save({'a2b': self.gen_a2b_s[i].state_dict()}, gen_name.replace('gen_', 'a2b_gen_'))
+                torch.save({'a2b': self.dis_a2b_s[i].state_dict()}, dis_name.replace('dis_', 'a2b_dis_'))
 
             if self.do_b2a_conf:
-                torch.save({'b2a': self.gen_b2a_s[i].state_dict()}, 'b2a_' + gen_name)
-                torch.save({'b2a': self.dis_b2a_s[i].state_dict()}, 'b2a_' + dis_name)
+
+                torch.save({'b2a': self.gen_b2a_s[i].state_dict()}, gen_name.replace('gen_', 'b2a_gen_'))
+                torch.save({'b2a': self.dis_b2a_s[i].state_dict()}, dis_name.replace('dis_', 'b2a_dis_'))
 
             if self.do_dis_council:
                 if self.do_a2b_conf:
-                    torch.save({'a2b': self.dis_council_a2b_s[i].state_dict()}, 'a2b_' + dis_council_name)
+                    torch.save({'a2b': self.dis_council_a2b_s[i].state_dict()}, dis_council_name.replace('dis_council_', 'a2b_dis_council_'))
                 if self.do_b2a_conf:
-                    torch.save({'b2a': self.dis_council_b2a_s[i].state_dict()}, 'b2a_' + dis_council_name)
+                    torch.save({'b2a': self.dis_council_b2a_s[i].state_dict()},  dis_council_name.replace('dis_council_', 'b2a_dis_council_'))
                 torch.save({'gen': self.gen_opt_s[i].state_dict(), 'dis': self.dis_opt_s[i].state_dict(),
                             'dis_council': self.dis_council_opt_s[i].state_dict()}, opt_name)
             else:
                 torch.save({'gen': self.gen_opt_s[i].state_dict(), 'dis': self.dis_opt_s[i].state_dict()}, opt_name)
-
-
-
 
 
 #%%

@@ -75,7 +75,10 @@ model_name = os.path.splitext(os.path.basename(opts.config))[0]
 output_directory = os.path.join(opts.output_path, model_name)
 checkpoint_directory, image_directory, log_directory = prepare_sub_folder(output_directory)
 
-shutil.copy(opts.config, os.path.join(output_directory, 'config_backup_ ' + str(datetime.datetime.now())[:19] + '.yaml'))  # copy config file to output folder
+config_backup_folder = os.path.join(output_directory, 'config_backup')
+if not os.path.exists(config_backup_folder):
+    os.mkdir(config_backup_folder)
+shutil.copy(opts.config, os.path.join(config_backup_folder, 'config_backup_ ' + str(datetime.datetime.now())[:19] + '.yaml'))  # copy config file to output folder
 
 
 # Start training
@@ -115,8 +118,8 @@ while True:
 
 
         # Main training code
+        config['iteration'] = it
         numberOf_dis_relative_iteration = config['dis']['numberOf_dis_relative_iteration'] if config['dis']['numberOf_dis_relative_iteration'] > 0 else 1
-
         if dis_iter < numberOf_dis_relative_iteration:  # training the discriminetor multiple times for each generator update
             dis_iter += 1
             trainer.dis_update(images_a, images_b, config)
