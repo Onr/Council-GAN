@@ -303,55 +303,75 @@ class Council_Trainer(nn.Module):
 
         for i in range(self.council_size):
             # encode
-            c_a, s_a_prime = self.gen_a_s[i].encode(x_a)
-            c_b, s_b_prime = self.gen_b_s[i].encode(x_b)
-            c_a_s.append(c_a)
-            s_a_prime_s.append(s_a_prime)
-            c_b_s.append(c_b)
-            s_b_prime_s.append(s_b_prime)
+            if self.do_a2b_conf:
+                c_a, s_a_prime = self.gen_a2b_s[i].encode(x_a)
+                c_a_s.append(c_a)
+                s_a_prime_s.append(s_a_prime)
+            if self.do_b2a_conf:
+                c_b, s_b_prime = self.gen_b2a_s[i].encode(x_b)
+                c_b_s.append(c_b)
+                s_b_prime_s.append(s_b_prime)
             # decode (within domain)
             if hyperparameters['recon_x_w'] != 0:
-                x_a_recon_s.append(self.gen_a_s[i].decode(c_a_s[i], s_a_prime_s[i], x_a))
-                x_b_recon_s.append(self.gen_b_s[i].decode(c_b_s[i], s_b_prime_s[i], x_b))
+                if not self.do_a2b_conf and not self.do_b2a_conf:
+                    print('cant do recon_x loss if not both do_a2b and b2a set to true')
+                else:
+                    x_a_recon_s.append(self.gen_b2a_s[i].decode(c_a_s[i], s_a_prime_s[i], x_a))
+                    x_b_recon_s.append(self.gen_a2b_s[i].decode(c_b_s[i], s_b_prime_s[i], x_b))
             # decode (cross domain)
-            x_ba_s.append(self.gen_a_s[i].decode(c_b_s[i], s_a, x_b))
-            x_ab_s.append(self.gen_b_s[i].decode(c_a_s[i], s_b, x_a))
+            if self.do_a2b_conf:
+                x_ab_s.append(self.gen_a2b_s[i].decode(c_a_s[i], s_b, x_a))
+            if self.do_b2a_conf:
+                x_ba_s.append(self.gen_b2a_s[i].decode(c_b_s[i], s_a, x_b))
+
             if hyperparameters['mask_zero_or_one_w'] != 0 or hyperparameters['mask_total_w'] != 0:
-                mask_ba_s.append(self.gen_a_s[i].dec.mask_s)
-                mask_ab_s.append(self.gen_b_s[i].dec.mask_s)
+                if self.do_a2b_conf:
+                    mask_ab_s.append(self.gen_a2b_s[i].dec.mask_s)
+                if self.do_b2a_conf:
+                    mask_ba_s.append(self.gen_b2a_s[i].dec.mask_s)
             # encode again
             if hyperparameters['recon_s_w'] != 0 or hyperparameters['recon_c_w'] != 0 or hyperparameters[
                 'recon_x_cyc_w'] != 0:
-                c_b_recon, s_a_recon = self.gen_a_s[i].encode(x_ba_s[i])
-                c_a_recon, s_b_recon = self.gen_b_s[i].encode(x_ab_s[i])
-                c_b_recon_s.append(c_b_recon)
-                s_a_recon_s.append(s_a_recon)
-                c_a_recon_s.append(c_a_recon)
-                s_b_recon_s.append(s_b_recon)
+                if not self.do_a2b_conf and not self.do_b2a_conf:
+                    print('cant do recon_s and recon_c loss if not both do_a2b and b2a set to true')
+                else:
+                    c_b_recon, s_a_recon = self.gen_a2b_s[i].encode(x_ba_s[i])
+                    c_a_recon, s_b_recon = self.gen_b2a_s[i].encode(x_ab_s[i])
+                    c_b_recon_s.append(c_b_recon)
+                    s_a_recon_s.append(s_a_recon)
+                    c_a_recon_s.append(c_a_recon)
+                    s_b_recon_s.append(s_b_recon)
             # decode again (if needed)
             if hyperparameters['recon_x_cyc_w'] != 0:
-                x_aba_s.append(
-                    self.gen_a.decode(c_a_recon_s[i], s_a_prime_s[i], x_a) if hyperparameters['recon_x_cyc_w'] > 0 else None)
-                x_bab_s.append(
-                    self.gen_b.decode(c_b_recon_s[i], s_b_prime_s[i], x_b) if hyperparameters['recon_x_cyc_w'] > 0 else None)
+                if not self.do_a2b_conf and not self.do_b2a_conf:
+                    print('cant do recon_x_cyc loss if not both do_a2b and b2a set to true')
+                else:
+                    x_aba_s.append(
+                        self.gen_b2a.decode(c_a_recon_s[i], s_a_prime_s[i], x_a) if hyperparameters['recon_x_cyc_w'] > 0 else None)
+                    x_bab_s.append(
+                        self.gen_a2b.decode(c_b_recon_s[i], s_b_prime_s[i], x_b) if hyperparameters['recon_x_cyc_w'] > 0 else None)
 
             self.loss_gen_total_s.append(0)
 
-            # masks should be make up of ones or zeros
+            # masks should contain ones or zeros
             if hyperparameters['mask_zero_or_one_w'] != 0:
-                self.loss_gen_mask_zero_one_ba_s.append(self.mask_zero_one_criterion(mask_ba_s[i]))
-                self.loss_gen_mask_zero_one_ab_s.append(self.mask_zero_one_criterion(mask_ab_s[i]))
-                self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * (
-                        self.loss_gen_mask_zero_one_ba_s[i] + self.loss_gen_mask_zero_one_ab_s[i])
+                if self.do_a2b_conf:
+                    self.loss_gen_mask_zero_one_ab_s.append(self.mask_zero_one_criterion(mask_ab_s[i]))
+                    self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ab_s[i]
+                if self.do_b2a_conf:
+                    self.loss_gen_mask_zero_one_ba_s.append(self.mask_zero_one_criterion(mask_ba_s[i]))
+                    self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i]
 
-            # masks should as small as posible to leave to original domain intacet
+            # masks should as small as possible to leave original domain with little changes
             if hyperparameters['mask_total_w'] != 0:
-                self.loss_gen_mask_total_ba_s.append(self.mask_small_criterion(mask_ba_s[i]))
-                self.loss_gen_mask_total_ab_s.append(self.mask_small_criterion(mask_ab_s[i]))
-                self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * (
-                        self.loss_gen_mask_total_ba_s[i] + self.loss_gen_mask_total_ab_s[i])
+                if self.do_a2b_conf:
+                    self.loss_gen_mask_total_ab_s.append(self.mask_small_criterion(mask_ab_s[i]))
+                    self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ab_s[i]
+                if self.do_b2a_conf:
+                    self.loss_gen_mask_total_ba_s.append(self.mask_small_criterion(mask_ba_s[i]))
+                    self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ba_s[i]
 
-
+# ===========================================================================
             # reconstruction loss
             if hyperparameters['recon_x_w'] != 0:
                 self.loss_gen_recon_x_a_s.append(self.recon_criterion(x_a_recon_s[i], x_a))
