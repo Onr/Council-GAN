@@ -33,7 +33,7 @@ import math
 from scipy.stats import binom
 from tqdm import tqdm
 import time
-
+from termcolor import colored
 
 
 
@@ -87,13 +87,14 @@ iterations = trainer.resume(checkpoint_directory, hyperparameters=config) if opt
 
 def launchTensorBoard(port=6006):
     import os
-    os.system('tensorboard --logdir=' + log_directory + '--port=' + str(port) + ' > /dev/null 2>/dev/null')
-    print('tensorboard board launched at http://127.0.0.1:' + str(port))
+    os.system('tensorboard --logdir=' + log_directory + ' --port=' + str(port) + ' > /dev/null 2>/dev/null')
+
     return
 if config['misc']['start_tensor_board']:
     port = config['misc']['start_tensor_board port']
     t_tensorBoard = threading.Thread(target=launchTensorBoard, args=([port]))  # launches TensorBoard in a diffrent thread
     t_tensorBoard.start()
+    print(colored('tensorboard board launched at http://127.0.0.1:' + str(port), 'yellow', attrs=['underline', 'bold', 'blink', 'reverse']))
 train_writer = tensorboardX.SummaryWriter(log_directory, purge_step=iterations)
 
 

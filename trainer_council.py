@@ -33,6 +33,7 @@ class Council_Trainer(nn.Module):
         self.numberOfCouncil_dis_relative_iteration_conf = hyperparameters['council']['numberOfCouncil_dis_relative_iteration']
         self.discriminetro_less_style_by_conf = hyperparameters['council']['discriminetro_less_style_by']
 
+        # all varible with '_conf' at the end will be saved and displayed in tensorboard logs
         self.recon_x_w_conf = hyperparameters['recon_x_w']
         self.recon_c_w_conf = hyperparameters['recon_c_w']
         self.recon_s_w_conf = hyperparameters['recon_s_w']
@@ -48,7 +49,11 @@ class Council_Trainer(nn.Module):
 
         self.council_abs_w_conf = hyperparameters['council_abs_w']
         self.council_w_conf = hyperparameters['council_w']
+
+        self.council_start_at_iter = hyperparameters['council_start_at_iter']
         self.mask_zero_or_one_w_conf = hyperparameters['mask_zero_or_one_w']
+        self.mask_zero_or_one_center_conf = hyperparameters['mask_zero_or_one_center']
+        self.mask_zero_or_one_epsilon_conf = hyperparameters['mask_zero_or_one_epsilon']
         self.mask_total_w_conf = hyperparameters['mask_total_w']
         self.batch_size_conf = hyperparameters['batch_size']
         self.do_w_loss_matching = hyperparameters['do_w_loss_matching']
@@ -225,12 +230,11 @@ class Council_Trainer(nn.Module):
     def council_basic_criterion_with_color(self, input, target):
         return torch.mean(torch.abs(input - target))
 
-    def mask_zero_one_criterion(self, mask):
-        return torch.sum(1 / (torch.abs(mask - 0.5) + 0.01)) / mask.numel()
+    def mask_zero_one_criterion(self, mask, center=0.5, epsilon=0.01):
+        return torch.sum(1 / (torch.abs(mask - center) + epsilon)) / mask.numel()
 
     def mask_small_criterion(self, mask):
-        # return torch.sum(mask) / mask.numel()
-        return torch.sum(mask) ** 2 / mask.numel()
+        return (torch.sum(mask) / mask.numel()) ** 2
 
     def forward(self, x_a, x_b=None, s_a=None, s_b=None):
         self.eval()
@@ -258,6 +262,7 @@ class Council_Trainer(nn.Module):
         return x_ab_s
 
     def gen_update(self, x_a, x_b, hyperparameters, iterations=0):
+
         for gen_opt in self.gen_opt_s:
             gen_opt.zero_grad()
         s_a = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
@@ -297,6 +302,7 @@ class Council_Trainer(nn.Module):
         self.loss_gen_vgg_a_s = []
         self.loss_gen_vgg_b_s = []
         self.loss_gen_total_s = []
+        self.council_w_conf = hyperparameters['council_w'] if hyperparameters['iteration'] > hyperparameters['council_start_at_iter'] else 0
 
 
         for i in range(self.council_size):
@@ -353,10 +359,10 @@ class Council_Trainer(nn.Module):
             # masks should contain ones or zeros
             if hyperparameters['mask_zero_or_one_w'] != 0:
                 if self.do_a2b_conf:
-                    self.loss_gen_mask_zero_one_ab_s.append(self.mask_zero_one_criterion(mask_ab_s[i]))
+                    self.loss_gen_mask_zero_one_ab_s.append(self.mask_zero_one_criterion(mask_ab_s[i], center=hyperparameters['mask_zero_or_one_center'], epsilon=hyperparameters['mask_zero_or_one_epsilon']))
                     self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ab_s[i]
                 if self.do_b2a_conf:
-                    self.loss_gen_mask_zero_one_ba_s.append(self.mask_zero_one_criterion(mask_ba_s[i]))
+                    self.loss_gen_mask_zero_one_ba_s.append(self.mask_zero_one_criterion(mask_ba_s[i], center=hyperparameters['mask_zero_or_one_center'], epsilon=hyperparameters['mask_zero_or_one_epsilon']))
                     self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i]
 
             # masks should as small as possible to leave original domain with little changes
@@ -465,10 +471,12 @@ class Council_Trainer(nn.Module):
 
         self.do_council_loss = hyperparameters['council']['flipOnOff_start_with'] if (currIterCyc < startCyc) \
             else not hyperparameters['council']['flipOnOff_start_with']
+
         if not hyperparameters['council']['flipOnOff']:
             # self.do_council_loss = hyperparameters['council']['flipOnOff_start_with']
             self.do_council_loss = True
-
+        if hyperparameters['iteration'] < hyperparameters['council_start_at_iter']:
+            self.do_council_loss = False
         self.council_loss_ba_s = []
         self.council_loss_ab_s = []
         for i in range(self.council_size):
@@ -683,6 +691,7 @@ class Council_Trainer(nn.Module):
             self.dis_opt_s[i].step()
 
     def dis_council_update(self, x_a=None, x_b=None, hyperparameters=None):
+
         if self.council_size <= 1 or hyperparameters['council']['numberOfCouncil_dis_relative_iteration'] == 0:
             print('no council discriminetor is needed (council size <= 1 or numberOfCouncil_dis_relative_iteration == 0)')
             return
@@ -699,8 +708,11 @@ class Council_Trainer(nn.Module):
         if not hyperparameters['council']['flipOnOff']:
             self.do_council_loss = hyperparameters['council']['flipOnOff_start_with']
 
-        if not self.do_council_loss or hyperparameters['council_w'] == 0:
+        if not self.do_council_loss or hyperparameters['council_w'] == 0 or hyperparameters['iteration'] < hyperparameters['council_start_at_iter']:
             return
+
+
+
         for dis_council_opt in self.dis_council_opt_s:
             dis_council_opt.zero_grad()
 

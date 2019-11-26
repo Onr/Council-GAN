@@ -28,9 +28,12 @@ recon_x_cyc_w: 0              # weight of explicit style augmented cycle consist
 vgg_w: 0                      # weight of domain-invariant perceptual loss
 council_w: 13
 council_abs_w: 0
+council_start_at_iter: 100
 council_abs_gray_scale: False
 
 mask_zero_or_one_w: 0
+mask_zero_or_one_center: 0.5
+mask_zero_or_one_epsilon: 0.01
 mask_total_w: 0
 
 abs_beginning_end: 0
@@ -126,7 +129,7 @@ RandomResizedCrop_ratio_min: 3. / 4.
 data_root: ./datasets/selfie2anime   # dataset folder location
 
 misc:
-  start_tensor_board: False
+  start_tensor_board: True
   start_tensor_board port: 6006
 
 
