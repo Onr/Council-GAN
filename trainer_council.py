@@ -30,7 +30,7 @@ class Council_Trainer(nn.Module):
         self.dis_b_s = []
         self.do_dis_council = hyperparameters['council_w'] != 0
         self.do_ads_council_loss = hyperparameters['council_abs_w'] != 0
-        self.numberOfCouncil_dis_relative_iteration_conf = hyperparameters['council']['numberOfCouncil_dis_relative_iteration']  # self.council_size - 1 # todo chagne to difrent number maybe not self.council size
+        self.numberOfCouncil_dis_relative_iteration_conf = hyperparameters['council']['numberOfCouncil_dis_relative_iteration']
         self.discriminetro_less_style_by_conf = hyperparameters['council']['discriminetro_less_style_by']
 
         self.recon_x_w_conf = hyperparameters['recon_x_w']
@@ -404,7 +404,7 @@ class Council_Trainer(nn.Module):
                 else:
                     self.loss_gen_beginning_end_b_ba_s.append(0)
 
-                self.abs_beginning_end_w_conf = hyperparameters['abs_beginning_end'] * (hyperparameters['abs_beginning_end_less_by'] ** iterations)  # TODO move
+                self.abs_beginning_end_w_conf = hyperparameters['abs_beginning_end'] * (hyperparameters['abs_beginning_end_less_by'] ** iterations)
                 self.abs_beginning_end_w_conf = max(self.abs_beginning_end_w_conf, hyperparameters['abs_beginning_end_minimume'])
 
                 if hyperparameters['do_a2b']:
