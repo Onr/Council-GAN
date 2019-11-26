@@ -1,6 +1,6 @@
 # GAN-Council
-official implementation for our paper Breaking the Cycle - Colleagues are all you need 
-![gan_council_overview](/images/gan_council_overview.png)
+Official implementation for our paper Breaking the Cycle - Colleagues are all you need 
+![gan_council_overview](/images/gan_council_overview.png =425x656)
 
-**Training:**
-run: python train.py --config configs/anime2face_council_folder.yaml --output_path ./outputs/council_anime2face_256_256 --resume 
+# Training:
+python train.py --config configs/anime2face_council_folder.yaml --output_path ./outputs/council_anime2face_256_256 --resume 
