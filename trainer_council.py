@@ -702,7 +702,7 @@ class Council_Trainer(nn.Module):
             self.loss_dis_total_s[i].backward()
             self.dis_opt_s[i].step()
 
-    def dis_council_update(self, x_a, x_b, hyperparameters):
+    def dis_council_update(self, x_a=None, x_b=None, hyperparameters=None):
         if self.council_size <= 1 or hyperparameters['council']['numberOfCouncil_dis_relative_iteration'] == 0:
             print('no council discriminetor is needed (council size <= 1 or numberOfCouncil_dis_relative_iteration == 0)')
             return
@@ -723,15 +723,20 @@ class Council_Trainer(nn.Module):
             return
         for dis_council_opt in self.dis_council_opt_s:
             dis_council_opt.zero_grad()
-        s_a = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
-        s_b = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda())
+
+        if self.do_b2a_conf:
+            s_a = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
+        if self.do_a2b_conf:
+            s_b = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda())
         if hyperparameters['council']['discriminetro_less_style_by'] != 0:
-            s_a_less = s_a * hyperparameters['council']['discriminetro_less_style_by']
-            s_b_less = s_b * hyperparameters['council']['discriminetro_less_style_by']
+            if self.do_b2a_conf:
+                s_a_less = s_a * hyperparameters['council']['discriminetro_less_style_by']
+            if self.do_a2b_conf:
+                s_b_less = s_b * hyperparameters['council']['discriminetro_less_style_by']
 
 
-        self.loss_dis_council_b_s = []
-        self.loss_dis_council_a_s = []
+        self.loss_dis_council_a2b_s = []
+        self.loss_dis_council_b2a_s = []
         self.loss_dis_council_total_s = []
         c_a_s = []
         c_b_s = []
@@ -743,40 +748,41 @@ class Council_Trainer(nn.Module):
         for i in range(self.council_size):
             # encode
             if hyperparameters['do_a2b']:
-                c_a, _ = self.gen_a_s[i].encode(x_a)
+                c_a, _ = self.gen_a2b_s[i].encode(x_a)
                 c_a_s.append(c_a)
             if hyperparameters['do_b2a']:
-                c_b, _ = self.gen_b_s[i].encode(x_b)
+                c_b, _ = self.gen_b2a_s[i].encode(x_b)
                 c_b_s.append(c_b)
 
             # decode (cross domain)
             if hyperparameters['do_a2b']:
-                x_ab = self.gen_b_s[i].decode(c_a, s_b, x_a)
+                x_ab = self.gen_a2b_s[i].decode(c_a, s_b, x_a)
                 x_ab_s.append(x_ab)
             if hyperparameters['do_b2a']:
-                x_ba = self.gen_a_s[i].decode(c_b, s_a, x_b)
+                x_ba = self.gen_b2a_s[i].decode(c_b, s_a, x_b)
                 x_ba_s.append(x_ba)
 
             if hyperparameters['council']['discriminetro_less_style_by'] != 0:
                 # decode (cross domain) less_style_by
                 if hyperparameters['do_a2b']:
-                    x_ab_less = self.gen_b_s[i].decode(c_a, s_b_less, x_a)
+                    x_ab_less = self.gen_a2b_s[i].decode(c_a, s_b_less, x_a)
                     x_ab_s_less.append(x_ab_less)
 
                 if hyperparameters['do_b2a']:
-                    x_ba_less = self.gen_a_s[i].decode(c_b, s_a_less, x_b)
+                    x_ba_less = self.gen_b2a_s[i].decode(c_b, s_a_less, x_b)
                     x_ba_s_less.append(x_ba_less)
 
-        comper_x_ba_s, comper_x_ab_s = (x_ba_s, x_ab_s)\
-            if hyperparameters['council']['discriminetro_less_style_by'] == 0 else \
-            (x_ba_s_less, x_ab_s_less)
+        if self.do_a2b_conf:
+            comper_x_ab_s = x_ab_s if hyperparameters['council']['discriminetro_less_style_by'] == 0 else x_ab_s_less
+        if self.do_b2a_conf:
+            comper_x_ba_s = x_ba_s if hyperparameters['council']['discriminetro_less_style_by'] == 0 else x_ba_s_less
 
 
         for i in range(self.council_size):
-            self.loss_dis_council_a_s.append(0)
-            self.loss_dis_council_b_s.append(0)
+            self.loss_dis_council_a2b_s.append(0)
+            self.loss_dis_council_b2a_s.append(0)
             index_to_chose_from = list(range(0, i)) + list(range(i + 1, self.council_size))
-            for k in range(hyperparameters['council']['numberOfCouncil_dis_relative_iteration']): # TODO maybe chagne so the same net/images wont be chossen twice
+            for k in range(hyperparameters['council']['numberOfCouncil_dis_relative_iteration']):
                 if k == self.council_size:
                     break
                 if len(index_to_chose_from) == 0:
@@ -786,19 +792,16 @@ class Council_Trainer(nn.Module):
 
                 # D loss
                 if hyperparameters['do_a2b']:
-                    self.loss_dis_council_b_s[i] += self.dis_council_b_s[i].calc_dis_loss(x_ab_s[i].detach(), comper_x_ab_s[index_to_comper].detach(), x_a)  # original
+                    self.loss_dis_council_a2b_s[i] += self.dis_council_a2b_s[i].calc_dis_loss(x_ab_s[i].detach(), comper_x_ab_s[index_to_comper].detach(), x_a)  # original
                 if hyperparameters['do_b2a']:
-                    self.loss_dis_council_a_s[i] += self.dis_council_a_s[i].calc_dis_loss(x_ba_s[i].detach(), comper_x_ba_s[index_to_comper].detach(), x_b)  # original
+                    self.loss_dis_council_b2a_s[i] += self.dis_council_b2a_s[i].calc_dis_loss(x_ba_s[i].detach(), comper_x_ba_s[index_to_comper].detach(), x_b)  # original
 
+            self.loss_dis_council_total_s.append(0)
+            if hyperparameters['do_a2b']:
+                self.loss_dis_council_total_s[i] += hyperparameters['council_w'] * self.loss_dis_council_a2b_s[i] / hyperparameters['council']['numberOfCouncil_dis_relative_iteration']
+            if hyperparameters['do_b2a']:
+                self.loss_dis_council_total_s[i] += hyperparameters['council_w'] * self.loss_dis_council_b2a_s[i] / hyperparameters['council']['numberOfCouncil_dis_relative_iteration']
 
-                # self.loss_dis_council_a_s.append(
-                #     self.dis_council_a_s[i].calc_dis_loss(comper_x_ba_s[index_to_comper].detach(), x_ba_s[i].detach(), x_b))  # TMP
-                # self.loss_dis_council_b_s.append(
-                #     self.dis_council_b_s[i].calc_dis_loss(comper_x_ab_s[index_to_comper].detach(), x_ab_s[i].detach(), x_a))  # TMP
-
-            self.loss_dis_council_total_s.append(
-                hyperparameters['council_w'] * self.loss_dis_council_a_s[i] / hyperparameters['council']['numberOfCouncil_dis_relative_iteration']
-                + hyperparameters['council_w'] * self.loss_dis_council_b_s[i] / hyperparameters['council']['numberOfCouncil_dis_relative_iteration'])
             self.loss_dis_council_total_s[i].backward()
             self.dis_council_opt_s[i].step()
 
