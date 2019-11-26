@@ -55,8 +55,8 @@ class Council_Trainer(nn.Module):
         self.los_matching_hist_size_conf = hyperparameters['loss_matching_hist_size']
         self.do_a2b_conf = hyperparameters['do_a2b']
         self.do_b2a_conf = hyperparameters['do_b2a']
-        self.w_match_a_conf = 1
-        self.w_match_b_conf = 1
+        self.w_match_b2a_conf = 1
+        self.w_match_a2b_conf = 1
 
         if self.do_a2b_conf:
             self.los_hist_gan_a2b_s = []
@@ -293,8 +293,8 @@ class Council_Trainer(nn.Module):
         self.loss_gen_cycrecon_x_b_s = []
         self.loss_gen_beginning_end_a_ab_s = []
         self.loss_gen_beginning_end_b_ba_s = []
-        self.loss_gen_adv_a_s = []
-        self.loss_gen_adv_b_s = []
+        self.loss_gen_adv_a2b_s = []
+        self.loss_gen_adv_b2a_s = []
         self.loss_gen_vgg_a_s = []
         self.loss_gen_vgg_b_s = []
         self.loss_gen_total_s = []
@@ -330,8 +330,7 @@ class Council_Trainer(nn.Module):
                 if self.do_b2a_conf:
                     mask_ba_s.append(self.gen_b2a_s[i].dec.mask_s)
             # encode again
-            if hyperparameters['recon_s_w'] != 0 or hyperparameters['recon_c_w'] != 0 or hyperparameters[
-                'recon_x_cyc_w'] != 0:
+            if hyperparameters['recon_s_w'] != 0 or hyperparameters['recon_c_w'] != 0 or hyperparameters['recon_x_cyc_w'] != 0:
                 if not self.do_a2b_conf and not self.do_b2a_conf:
                     print('cant do recon_s and recon_c loss if not both do_a2b and b2a set to true')
                 else:
@@ -371,24 +370,23 @@ class Council_Trainer(nn.Module):
                     self.loss_gen_mask_total_ba_s.append(self.mask_small_criterion(mask_ba_s[i]))
                     self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ba_s[i]
 
-# ===========================================================================
             # reconstruction loss
-            if hyperparameters['recon_x_w'] != 0:
+            if hyperparameters['recon_x_w'] != 0 and self.do_a2b_conf and self.do_b2a_conf:
                 self.loss_gen_recon_x_a_s.append(self.recon_criterion(x_a_recon_s[i], x_a))
                 self.loss_gen_recon_x_b_s.append(self.recon_criterion(x_b_recon_s[i], x_b))
                 self.loss_gen_total_s[i] += hyperparameters['recon_x_w'] * (
                         self.loss_gen_recon_x_a_s[i] + self.loss_gen_recon_x_b_s[i])
-            if hyperparameters['recon_s_w'] != 0:
+            if hyperparameters['recon_s_w'] != 0 and self.do_a2b_conf and self.do_b2a_conf:
                 self.loss_gen_recon_s_a_s.append(self.recon_criterion(s_a_recon_s[i], s_a))
                 self.loss_gen_recon_s_b_s.append(self.recon_criterion(s_b_recon_s[i], s_b))
                 self.loss_gen_total_s[i] += hyperparameters['recon_s_w'] * (
                         self.loss_gen_recon_s_a_s[i] + self.loss_gen_recon_s_b_s[i])
-            if hyperparameters['recon_c_w'] != 0:
+            if hyperparameters['recon_c_w'] != 0 and self.do_a2b_conf and self.do_b2a_conf:
                 self.loss_gen_recon_c_a_s.append(self.recon_criterion(c_a_recon_s[i], c_a_s[i]))
                 self.loss_gen_recon_c_b_s.append(self.recon_criterion(c_b_recon_s[i], c_b_s[i]))
                 self.loss_gen_total_s[i] += hyperparameters['recon_c_w'] * (
                         self.loss_gen_recon_c_a_s[i] + self.loss_gen_recon_c_b_s[i])
-            if hyperparameters['recon_x_cyc_w'] != 0:
+            if hyperparameters['recon_x_cyc_w'] != 0 and self.do_a2b_conf and self.do_b2a_conf:
                 self.loss_gen_cycrecon_x_a_s.append(
                     self.recon_criterion(x_aba_s[i], x_a) if hyperparameters['recon_x_cyc_w'] > 0 else 0)
                 self.loss_gen_cycrecon_x_b_s.append(
@@ -399,15 +397,14 @@ class Council_Trainer(nn.Module):
                 if hyperparameters['do_a2b']:
                     self.loss_gen_beginning_end_a_ab_s.append(
                         self.recon_criterion_v2_color(x_ab_s[i], x_a) if hyperparameters['abs_beginning_end'] > 0 or hyperparameters['abs_beginning_end_minimume'] > 0 else 0)
-                        # self.recon_criterion_v3_gray_scale(x_ab_s[i], x_a) if hyperparameters['abs_beginning_end'] > 0 else 0)
                 else:
                     self.loss_gen_beginning_end_a_ab_s.append(0)
                 if hyperparameters['do_b2a']:
                     self.loss_gen_beginning_end_b_ba_s.append(
                         self.recon_criterion_v2_color(x_ba_s[i], x_b) if hyperparameters['abs_beginning_end'] > 0 or hyperparameters['abs_beginning_end_minimume'] > 0 else 0)
-                        # self.recon_criterion_v3_gray_scale(x_ba_s[i], x_b) if hyperparameters['abs_beginning_end'] > 0 else 0)
                 else:
                     self.loss_gen_beginning_end_b_ba_s.append(0)
+
                 self.abs_beginning_end_w_conf = hyperparameters['abs_beginning_end'] * (hyperparameters['abs_beginning_end_less_by'] ** iterations)  # TODO move
                 self.abs_beginning_end_w_conf = max(self.abs_beginning_end_w_conf, hyperparameters['abs_beginning_end_minimume'])
 
@@ -424,26 +421,26 @@ class Council_Trainer(nn.Module):
 
                 if hyperparameters['do_a2b']:
                     x_ab_s_curr = x_ab_s[i] if not hyperparameters['dis']['do_Dis_only_gray'] else torch.sum(x_ab_s[i], 1).unsqueeze(1).repeat(1, hyperparameters['input_dim_b'], 1, 1) / hyperparameters['input_dim_b']
-                    loss_gen_adv_b = self.dis_b_s[i_dis].calc_gen_loss(x_ab_s_curr)
+                    loss_gen_adv_a2b = self.dis_a2b_s[i_dis].calc_gen_loss(x_ab_s_curr)
                 else:
-                    loss_gen_adv_b = 0
+                    loss_gen_adv_a2b = 0
 
                 if hyperparameters['do_b2a']:
                     x_ba_s_curr = x_ba_s[i] if not hyperparameters['dis']['do_Dis_only_gray'] else torch.sum(x_ba_s[i], 1).unsqueeze(1).repeat(1, hyperparameters['input_dim_a'], 1, 1) / hyperparameters['input_dim_a']
-                    loss_gen_adv_a = self.dis_a_s[i_dis].calc_gen_loss(x_ba_s_curr)
+                    loss_gen_adv_b2a = self.dis_b2a_s[i_dis].calc_gen_loss(x_ba_s_curr)
                 else:
-                    loss_gen_adv_a = 0
+                    loss_gen_adv_b2a = 0
 
-                self.loss_gen_adv_b_s.append(loss_gen_adv_b)
-                self.loss_gen_adv_a_s.append(loss_gen_adv_a)
+                self.loss_gen_adv_a2b_s.append(loss_gen_adv_a2b)
+                self.loss_gen_adv_b2a_s.append(loss_gen_adv_b2a)
 
                 if self.do_w_loss_matching:
                     if hyperparameters['do_a2b']:
-                        self.los_hist_gan_b_s[i].append(loss_gen_adv_b.detach().cpu().numpy())
-                        self.los_hist_gan_b_s[i].popleft()
+                        self.los_hist_gan_a2b_s[i].append(loss_gen_adv_a2b.detach().cpu().numpy())
+                        self.los_hist_gan_a2b_s[i].popleft()
                     if hyperparameters['do_b2a']:
-                        self.los_hist_gan_a_s[i].append(loss_gen_adv_a.detach().cpu().numpy())
-                        self.los_hist_gan_a_s[i].popleft()
+                        self.los_hist_gan_b2a_s[i].append(loss_gen_adv_b2a.detach().cpu().numpy())
+                        self.los_hist_gan_b2a_s[i].popleft()
 
                 if hyperparameters['do_a2b']:
                     self.loss_gen_total_s[i] += hyperparameters['gan_w'] * self.loss_gen_adv_b_s[i]
@@ -481,8 +478,10 @@ class Council_Trainer(nn.Module):
             if (hyperparameters['council_w'] != 0 or hyperparameters['council_abs_w'] != 0) and self.do_council_loss and self.council_size > 1:
                 # if i == 0:
                 #     print('do council loss: True')
-                self.council_loss_ab_s.append(0)
-                self.council_loss_ba_s.append(0)
+                if self.do_a2b_conf:
+                    self.council_loss_ab_s.append(0)
+                if self.o_b2a_conf:
+                    self.council_loss_ba_s.append(0)
 
 
                 if self.do_dis_council:  # do council discriminator
@@ -498,24 +497,20 @@ class Council_Trainer(nn.Module):
                         if hyperparameters['do_a2b']:
                             self.los_hist_council_b_s[i].append(dis_council_loss_ab.detach().cpu().numpy())
                             self.los_hist_council_b_s[i].popleft()
+                            self.w_match_a2b_conf = np.mean(self.los_hist_gan_a2b_s[i]) / np.mean(self.los_hist_council_a2b_s[i])
+                            dis_council_loss_ab *= self.w_match_a2b_conf
                         if hyperparameters['do_b2a']:
                             self.los_hist_council_a_s[i].append(dis_council_loss_ba.detach().cpu().numpy())
                             self.los_hist_council_a_s[i].popleft()
+                            self.w_match_b2a_conf = np.mean(self.los_hist_gan_b2a_s[i]) / np.mean(self.los_hist_council_b2a_s[i])
+                            dis_council_loss_ba *= self.w_match_b2a_conf
 
-                        self.w_match_a_conf = np.mean(self.los_hist_gan_a_s[i]) / np.mean(self.los_hist_council_a_s[i])
-                        self.w_match_b_conf = np.mean(self.los_hist_gan_b_s[i]) / np.mean(self.los_hist_council_b_s[i])
-                        dis_council_loss_ab *= self.w_match_b_conf
-                        dis_council_loss_ba *= self.w_match_a_conf
-                    dis_council_loss_ab *= hyperparameters['council_w']
-                    dis_council_loss_ba *= hyperparameters['council_w']
                     if hyperparameters['do_a2b']:
+                        dis_council_loss_ab *= hyperparameters['council_w']
                         self.council_loss_ab_s[i] += dis_council_loss_ab
                     if hyperparameters['do_b2a']:
+                        dis_council_loss_ba *= hyperparameters['council_w']
                         self.council_loss_ba_s[i] += dis_council_loss_ba
-
-
-                            # print('dis_council_loss_ab: ' + str(dis_council_loss_ab.item()))
-                        # print('dis_council_loss_ba: ' + str(dis_council_loss_ba.item()))
 
                 if hyperparameters['council_abs_w'] != 0 and self.council_size > 1:  # ads loss without discriminetor
                     tmp = list(range(0, i)) + list(range(i + 1, self.council_size))
@@ -538,10 +533,11 @@ class Council_Trainer(nn.Module):
                             abs_council_loss_ba = hyperparameters['council_abs_w'] * self.council_basic_criterion_with_color(x_ba_s[i], x_ba_s[comper_to_i].detach())
                         else:
                             abs_council_loss_ba = 0
-                    self.council_loss_ba_s[i] += abs_council_loss_ab
-                    self.council_loss_ab_s[i] += abs_council_loss_ba
-                    # print('abs_council_loss_ab: ' + str(abs_council_loss_ab.item()))
-                    # print('abs_council_loss_ba: ' + str(abs_council_loss_ba.item()))
+                    if self.do_a2b_conf:
+                        self.council_loss_ab_s[i] += abs_council_loss_ba
+                    if self.do_b2a_conf:
+                        self.council_loss_ba_s[i] += abs_council_loss_ab
+
                 if hyperparameters['council']['useJudge'] and i == 0:
                     if hyperparameters['do_a2b']:
                         self.loss_gen_total_s[i] = self.council_loss_ab_s[i]  # only update based on the council loss
@@ -555,27 +551,15 @@ class Council_Trainer(nn.Module):
 
 
             else:
-                self.council_loss_ba_s.append(0)
-                self.council_loss_ab_s.append(0)
-                # if i == 0:
-                #     print('do council loss: False')
+                if self.do_a2b_conf:
+                    self.council_loss_ab_s.append(0)
+                if self.do_b2a_conf:
+                    self.council_loss_ba_s.append(0)
+
             # backpropogation
             self.loss_gen_total_s[i].backward()
             self.gen_opt_s[i].step()
 
-            # if type(self.council_loss_ba_s[i]) is not int:
-            #     if i == 0:
-            #         print('**********************************************')
-            #     print('=======================')
-            #     print('gan_w * loss_gen_adv_a_s[' + str(i) + '] = ' + str(
-            #         (hyperparameters['gan_w'] * self.loss_gen_adv_a_s[i]).item()))
-            #     print('gan_w * loss_gen_adv_b_s[' + str(i) + '] = ' + str(
-            #         (hyperparameters['gan_w'] * self.loss_gen_adv_b_s[i]).item()))
-            #     print('council_w * council_loss_ba_s[' + str(i) + '] = ' + str(
-            #         (hyperparameters['gan_w'] * self.council_loss_ba_s[i]).item()))
-            #     print('council_w * council_loss_ab_s[' + str(i) + '] = ' + str(
-            #         (hyperparameters['gan_w'] * self.council_loss_ab_s[i]).item()))
-            #     print('=======================')
 
     def compute_vgg_loss(self, vgg, img, target):
         img_vgg = vgg_preprocess(img)
