@@ -901,9 +901,6 @@ class Council_Trainer(nn.Module):
                 torch.save({'b2a': self.gen_b2a_s[i].state_dict()}, 'b2a_' + gen_name)
                 torch.save({'b2a': self.dis_b2a_s[i].state_dict()}, 'b2a_' + dis_name)
 
-            # torch.save({'a2b': self.gen_a2b_s[i].state_dict(), 'b2a': self.gen_b2a_s[i].state_dict()}, gen_name)
-            # torch.save({'a2b': self.dis_a2b_s[i].state_dict(), 'b2a': self.dis_b2a_s[i].state_dict()}, dis_name)
-
             if self.do_dis_council:
                 if self.do_a2b_conf:
                     torch.save({'a2b': self.dis_council_a2b_s[i].state_dict()}, 'a2b_' + dis_council_name)
