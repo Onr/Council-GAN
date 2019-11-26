@@ -36,7 +36,6 @@ import time
 from termcolor import colored
 
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='configs/glasses_folder.yaml', help='Path to the config file.')
 parser.add_argument('--output_path', type=str, default='.outputs', help="outputs path")
@@ -81,6 +80,9 @@ if not os.path.exists(config_backup_folder):
 shutil.copy(opts.config, os.path.join(config_backup_folder, 'config_backup_ ' + str(datetime.datetime.now())[:19] + '.yaml'))  # copy config file to output folder
 
 
+m1_1_a2b, s1_1_a2b, m1_1_b2a, s1_1_b2a = None, None, None, None # save statisices for the fid calculation
+
+
 # Start training
 iterations = trainer.resume(checkpoint_directory, hyperparameters=config) if opts.resume else 0
 
@@ -88,15 +90,33 @@ iterations = trainer.resume(checkpoint_directory, hyperparameters=config) if opt
 def launchTensorBoard(port=6006):
     import os
     os.system('tensorboard --logdir=' + log_directory + ' --port=' + str(port) + ' > /dev/null 2>/dev/null')
-
     return
 if config['misc']['start_tensor_board']:
     port = config['misc']['start_tensor_board port']
     t_tensorBoard = threading.Thread(target=launchTensorBoard, args=([port]))  # launches TensorBoard in a diffrent thread
     t_tensorBoard.start()
-    print(colored('tensorboard board launched at http://127.0.0.1:' + str(port), 'yellow', attrs=['underline', 'bold', 'blink', 'reverse']))
+    print(colored('tensorboard board launched at http://127.0.0.1:' + str(port), color='yellow', attrs=['underline', 'bold', 'blink', 'reverse']))
 train_writer = tensorboardX.SummaryWriter(log_directory, purge_step=iterations)
 
+def test_fid(dataset1, dataset2, iteration, train_writer, name, m1=None, s1=None, retun_m1_s1=False, batch_size=10, dims=2048, cuda=True):
+    import pytorch_fid.fid_score
+    fid_paths = [dataset1, dataset2]
+    fid_value, m1, s1 = pytorch_fid.fid_score.calculate_fid_given_paths_save_first_domain_statistic(paths=fid_paths,
+                                                                                            batch_size=batch_size,
+                                                                                            cuda=cuda,
+                                                                                            dims=dims,
+                                                                                            m1=m1, s1=s1)
+    # train_writer = tensorboardX.SummaryWriter(log_directory)
+
+    train_writer.add_scalar('FID score/' + name, fid_value, iterations)
+
+    print(colored('iteration: ' + str(iteration) + ' ,' + name + ' FID: ' + str(fid_value), color='green', attrs=['underline', 'bold', 'blink', 'reverse']))
+    # with open('./fid_test_res.txt', 'a') as file_save:
+    #     file_save.write('iteration: ' + str(iteration) + ' ,' + name + ' FID: ' + str (fid_value) + '\n')
+
+    if not retun_m1_s1:
+        return
+    return m1, s1
 
 
 t = time.time()
@@ -143,6 +163,98 @@ while True:
         # write training stats in log file
         if (iterations + 1) % config['log_iter'] == 0:
             write_loss(iterations, trainer, train_writer)
+
+
+
+        # test FID
+        if config['misc']['do_test_Fid'] and (iterations + 1) % config['misc']['test_Fid_iter'] == 0:
+            if config['do_a2b']:
+                tmp_path_im_a2b = image_directory + '/tmp/a2b'
+                if not os.path.exists(tmp_path_im_a2b):
+                    print("Creating directory: {}".format(tmp_path_im_a2b))
+                    os.makedirs(tmp_path_im_a2b)
+                filelist2 = [f for f in os.listdir(tmp_path_im_a2b) if f.endswith(".jpg")]
+                for f2 in filelist2:
+                    os.remove(os.path.join(tmp_path_im_a2b, f2))
+
+            if config['do_b2a']:
+                tmp_path_im_b2a = image_directory + '/tmp/b2a'
+                if not os.path.exists(tmp_path_im_b2a):
+                    print("Creating directory: {}".format(tmp_path_im_b2a))
+                    os.makedirs(tmp_path_im_b2a)
+                filelist1 = [f for f in os.listdir(tmp_path_im_b2a) if f.endswith(".jpg")]
+                for f1 in filelist1:
+                    os.remove(os.path.join(tmp_path_im_b2a, f1))
+
+            if config['do_a2b']:
+                tmp_images_a = test_loader_a[0].dataset[0].cuda().unsqueeze(0)
+            if config['do_b2a']:
+                tmp_images_b = test_loader_b[0].dataset[0].cuda().unsqueeze(0)
+            ind_a2b = 0
+            ind_b2a = 0
+            for k in tqdm(range(1, config['misc']['test_Fid_num_of_im']), desc='Creating images for tests'):
+                c_ind = np.random.randint(config['council']['council_size'])
+                if config['do_a2b']:
+                    # tmp_images_b = torch.cat((tmp_images_b, (test_loader_b[0].dataset[k].cuda().unsqueeze(0))), 0)
+                    tmp_images_a = test_loader_a[0].dataset[k].cuda().unsqueeze(0)
+
+                    styles = torch.randn(tmp_images_a.shape[0], config['gen']['style_dim'], 1, 1).cuda()
+                    tmp_res_imges_a2b = trainer.sample(x_a=tmp_images_a, x_b=None, s_a=styles, s_b=styles)
+                    tmp_res_imges_a2b = tmp_res_imges_a2b[2][c_ind].unsqueeze(0)
+                    for tmp_res_imges_a2b_t in tmp_res_imges_a2b:
+                        vutils.save_image(tmp_res_imges_a2b_t, tmp_path_im_a2b + '/' + str(ind_a2b) + '.jpg')
+                        ind_a2b += 1
+                if config['do_b2a']:
+                    # tmp_images_a = torch.cat((tmp_images_a, (test_loader_a[0].dataset[k].cuda().unsqueeze(0))), 0)
+                    tmp_images_b = test_loader_b[0].dataset[k].cuda().unsqueeze(0)
+                    styles = torch.randn(tmp_images_b.shape[0], config['gen']['style_dim'], 1, 1).cuda()
+                    tmp_res_imges_b2a = trainer.sample(x_a=None, x_b=tmp_images_b, s_a=styles, s_b=styles)
+
+                    tmp_res_imges_b2a = tmp_res_imges_b2a[6][c_ind].unsqueeze(0)
+                    for tmp_res_imges_b2a_t in tmp_res_imges_b2a:
+                        vutils.save_image(tmp_res_imges_b2a_t, tmp_path_im_b2a + '/' + str(ind_b2a) + '.jpg')
+                        ind_b2a += 1
+
+            if config['do_a2b']:
+                dataset_for_fid_B = os.path.join(config['data_root'], 'testB')
+                tmp_path_a2b_save_stat = dataset_for_fid_B
+                if os.path.exists(tmp_path_a2b_save_stat + '/m1'):
+                    with open(tmp_path_a2b_save_stat + '/m1', 'rb') as f:
+                        m1_1_a2b = pickle.load(f)
+                if os.path.exists(tmp_path_a2b_save_stat + '/s1'):
+                    with open(tmp_path_a2b_save_stat + '/s1', 'rb') as f:
+                        s1_1_a2b = pickle.load(f)
+
+                if m1_1_a2b is None or s1_1_a2b is None:
+                    print('fid test initialization')
+                    m1_1_a2b, s1_1_a2b = test_fid(dataset_for_fid_B, tmp_path_im_a2b, iterations, train_writer, 'B', retun_m1_s1=True, batch_size=10)
+                    with open(tmp_path_a2b_save_stat + '/m1', 'wb') as f:
+                        pickle.dump(m1_1_a2b, f)
+                    with open(tmp_path_a2b_save_stat + '/s1', 'wb') as f:
+                        pickle.dump(s1_1_a2b, f)
+                else:
+                    _ = test_fid(dataset_for_fid_B, tmp_path_im_a2b, iterations, train_writer, 'B', m1_1_a2b, s1_1_a2b)
+
+            if config['do_b2a']:
+                dataset_for_fid_A = os.path.join(config['data_root'], 'testA')
+                tmp_path_b2a_save_stat = dataset_for_fid_A
+                if os.path.exists(tmp_path_b2a_save_stat + '/m1'):
+                    with open(tmp_path_b2a_save_stat + '/m1', 'rb') as f:
+                        m1_1_b2a = pickle.load(f)
+                if os.path.exists(tmp_path_b2a_save_stat + '/s1'):
+                    with open(tmp_path_b2a_save_stat + '/s1', 'rb') as f:
+                        s1_1_b2a = pickle.load(f)
+
+                if m1_1_b2a is None or s1_1_b2a is None:
+                    print('fid test initialization')
+                    m1_1_b2a, s1_1_b2a = test_fid(dataset_for_fid_A, tmp_path_im_b2a, iterations, train_writer, 'A', retun_m1_s1=True, batch_size=10)
+                    with open(tmp_path_b2a_save_stat + '/m1', 'wb') as f:
+                        pickle.dump(m1_1_b2a, f)
+                    with open(tmp_path_b2a_save_stat + '/s1', 'wb') as f:
+                        pickle.dump(s1_1_b2a, f)
+                else:
+                    _ = test_fid(dataset_for_fid_A, tmp_path_im_b2a, iterations, train_writer, 'A', m1_1_b2a, s1_1_b2a)
+
 
 
 

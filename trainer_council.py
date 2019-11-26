@@ -45,12 +45,11 @@ class Council_Trainer(nn.Module):
         self.flipOnOff_On_iteration_conf = hyperparameters['council']['flipOnOff_On_iteration']
         self.flipOnOff_Off_iteration_conf = hyperparameters['council']['flipOnOff_Off_iteration']
         self.flipOnOff_Off_iteration_conf = hyperparameters['council']['flipOnOff_start_with']
-        self.start_On_iteration_conf = hyperparameters['council']['start_On_iteration']
 
         self.council_abs_w_conf = hyperparameters['council_abs_w']
         self.council_w_conf = hyperparameters['council_w']
 
-        self.council_start_at_iter = hyperparameters['council_start_at_iter']
+        self.council_start_at_iter = hyperparameters['council']['council_start_at_iter']
         self.mask_zero_or_one_w_conf = hyperparameters['mask_zero_or_one_w']
         self.mask_zero_or_one_center_conf = hyperparameters['mask_zero_or_one_center']
         self.mask_zero_or_one_epsilon_conf = hyperparameters['mask_zero_or_one_epsilon']
@@ -302,7 +301,7 @@ class Council_Trainer(nn.Module):
         self.loss_gen_vgg_a_s = []
         self.loss_gen_vgg_b_s = []
         self.loss_gen_total_s = []
-        self.council_w_conf = hyperparameters['council_w'] if hyperparameters['iteration'] > hyperparameters['council_start_at_iter'] else 0
+        self.council_w_conf = hyperparameters['council_w'] if hyperparameters['iteration'] > hyperparameters['council']['council_start_at_iter'] else 0
 
 
         for i in range(self.council_size):
@@ -475,7 +474,7 @@ class Council_Trainer(nn.Module):
         if not hyperparameters['council']['flipOnOff']:
             # self.do_council_loss = hyperparameters['council']['flipOnOff_start_with']
             self.do_council_loss = True
-        if hyperparameters['iteration'] < hyperparameters['council_start_at_iter']:
+        if hyperparameters['iteration'] < hyperparameters['council']['council_start_at_iter']:
             self.do_council_loss = False
         self.council_loss_ba_s = []
         self.council_loss_ab_s = []
@@ -578,11 +577,12 @@ class Council_Trainer(nn.Module):
             x_b_s = []
             s_a = self.s_a if s_a is None else s_a
             s_a1 = Variable(s_a)
-            s_a2 = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
+            s_a2 = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda())
             x_b_recon, x_ba1, x_ba2, x_ba1_mask = [], [], [], []
 
         council_member_to_sample_vec = range(self.council_size) if council_member_to_sample_vec is None else council_member_to_sample_vec
-        for i in range(x_a.size(0)):
+        x_size = x_a.size(0) if x_a is not None else x_b.size(0)
+        for i in range(x_size):
             for j in council_member_to_sample_vec:
                 if self.do_b2a_conf:
                     x_b_s.append(x_b[i].unsqueeze(0))
@@ -708,7 +708,7 @@ class Council_Trainer(nn.Module):
         if not hyperparameters['council']['flipOnOff']:
             self.do_council_loss = hyperparameters['council']['flipOnOff_start_with']
 
-        if not self.do_council_loss or hyperparameters['council_w'] == 0 or hyperparameters['iteration'] < hyperparameters['council_start_at_iter']:
+        if not self.do_council_loss or hyperparameters['council_w'] == 0 or hyperparameters['iteration'] < hyperparameters['council']['council_start_at_iter']:
             return
 
 

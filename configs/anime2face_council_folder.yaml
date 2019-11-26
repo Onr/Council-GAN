@@ -11,7 +11,7 @@ log_iter: 1                   # How often do you want to log the training stats
 # optimization options
 random_seed: 1
 max_iter: 1500000             # maximum number of training iterations
-batch_size: 1                 # batch size
+batch_size: 2                 # batch size
 weight_decay: 0.0001          # weight decay
 beta1: 0.5                    # Adam parameter
 beta2: 0.999                  # Adam parameter
@@ -20,21 +20,20 @@ lr: 0.0001                    # initial learning rate
 lr_policy: step               # learning rate scheduler
 step_size: 100000             # how often to decay learning rate
 gamma: 0.5                    # how much to decay learning rate
+
 gan_w: 26                     # weight of adversarial loss
 recon_x_w: 0                  # weight of image reconstruction loss
 recon_s_w: 0                  # weight of style reconstruction loss
 recon_c_w: 0                  # weight of content reconstruction loss
 recon_x_cyc_w: 0              # weight of explicit style augmented cycle consistency loss
 vgg_w: 0                      # weight of domain-invariant perceptual loss
-council_w: 13
-council_abs_w: 0
-council_start_at_iter: 100
-council_abs_gray_scale: False
-
-mask_zero_or_one_w: 0
+council_w: 13                 # weight of Council loss
+council_abs_w: 0              # weight of Council loss abs between images if you use this loss there should be no need to use the regular council_w as well (with this loss active there will be less or no multimodal output)
+council_abs_gray_scale: False # is set to true the council loss will use the gray scale image not the rgb ones
+mask_zero_or_one_w: 0         # weight of part of the focus loss. how much the mask should approach zero or ones
 mask_zero_or_one_center: 0.5
 mask_zero_or_one_epsilon: 0.01
-mask_total_w: 0
+mask_total_w: 0               # weight of the 2nd part of the focus loss. how much the mask should be small
 
 abs_beginning_end: 0
 abs_beginning_end_less_by: 1
@@ -72,14 +71,14 @@ dis:
   numberOf_dis_relative_iteration: 1
 
 council:
-  council_size: 4
-  numberOfCouncil_dis_relative_iteration: 4
-  flipOnOff: False
+  council_size: 4             # number of council members
+  numberOfCouncil_dis_relative_iteration: 4 # number of council discriminator training iteration for each gen iteration
+  flipOnOff: False            # whether to filp the council loss on and off
   flipOnOff_start_with: True
   flipOnOff_On_iteration: 45
   flipOnOff_Off_iteration: 5
   discriminetro_less_style_by: 0.71
-  start_On_iteration: 2500
+  council_start_at_iter: 1000  # start using the council loss for the specified iteration
 
 
 distrbution_match:
@@ -131,7 +130,9 @@ data_root: ./datasets/selfie2anime   # dataset folder location
 misc:
   start_tensor_board: True
   start_tensor_board port: 6006
-
+  do_test_Fid: True # True
+  test_Fid_iter: 1_000
+  test_Fid_num_of_im: 100
 
 
 
