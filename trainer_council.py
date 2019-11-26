@@ -826,9 +826,13 @@ class Council_Trainer(nn.Module):
             last_model_name = get_model_list(checkpoint_dir, "gen_" + str(i))
             if last_model_name is not None:
                 print(last_model_name)
-                state_dict = torch.load(last_model_name)
-                self.gen_a_s[i].load_state_dict(state_dict['a'])
-                self.gen_b_s[i].load_state_dict(state_dict['b'])
+                if self.do_a2b_conf:
+                    state_dict = torch.load('a2b_' + last_model_name)
+                    self.gen_a2b_s[i].load_state_dict(state_dict['a2b'])
+                if self.do_b2a_conf:
+                    state_dict = torch.load('b2a_' + last_model_name)
+                    self.gen_b2a_s[i].load_state_dict(state_dict['b2a'])
+
                 iterations = int(last_model_name[-11:-3])
             else:
                 warnings.warn('Failed to find gen checkpoint, did not load model')
@@ -836,9 +840,12 @@ class Council_Trainer(nn.Module):
             # Load discriminators
             last_model_name = get_model_list(checkpoint_dir, "dis_" + str(i))
             if last_model_name is not None:
-                state_dict = torch.load(last_model_name)
-                self.dis_a_s[i].load_state_dict(state_dict['a'])
-                self.dis_b_s[i].load_state_dict(state_dict['b'])
+                if self.do_a2b_conf:
+                    state_dict = torch.load('a2b_' + last_model_name)
+                    self.dis_a2b_s[i].load_state_dict(state_dict['a2b'])
+                if self.do_b2a_conf:
+                    state_dict = torch.load('b2a_' + last_model_name)
+                    self.dis_b2a_s[i].load_state_dict(state_dict['b2a'])
             else:
                 warnings.warn('Failed to find dis checkpoint, did not load model')
             # Load council discriminators
@@ -846,9 +853,12 @@ class Council_Trainer(nn.Module):
                 try:
                     last_model_name = get_model_list(checkpoint_dir, "dis_council_" + str(i))
                     if last_model_name is not None:
-                        state_dict = torch.load(last_model_name)
-                        self.dis_council_a_s[i].load_state_dict(state_dict['a'])
-                        self.dis_council_b_s[i].load_state_dict(state_dict['b'])
+                        if self.do_a2b_conf:
+                            state_dict = torch.load('a2b_' + last_model_name)
+                            self.dis_council_a2b_s[i].load_state_dict(state_dict['a2b'])
+                        if self.do_b2a_conf:
+                            state_dict = torch.load('b2a_' + last_model_name)
+                            self.dis_council_b2a_s[i].load_state_dict(state_dict['b2a'])
                     else:
                         warnings.warn('Failed to find dis checkpoint, did not load model')
                 except:
@@ -883,11 +893,22 @@ class Council_Trainer(nn.Module):
             if self.do_dis_council:
                 dis_council_name = os.path.join(snapshot_dir, 'dis_council_' + str(i) + '_%08d.pt' % (iterations + 1))
             opt_name = os.path.join(snapshot_dir, 'optimizer_' + str(i) + '.pt')
-            torch.save({'a': self.gen_a_s[i].state_dict(), 'b': self.gen_b_s[i].state_dict()}, gen_name)
-            torch.save({'a': self.dis_a_s[i].state_dict(), 'b': self.dis_b_s[i].state_dict()}, dis_name)
+            if self.do_a2b_conf:
+                torch.save({'a2b': self.gen_a2b_s[i].state_dict()}, 'a2b_' + gen_name)
+                torch.save({'a2b': self.dis_a2b_s[i].state_dict()}, 'a2b_' + dis_name)
+
+            if self.do_b2a_conf:
+                torch.save({'b2a': self.gen_b2a_s[i].state_dict()}, 'b2a_' + gen_name)
+                torch.save({'b2a': self.dis_b2a_s[i].state_dict()}, 'b2a_' + dis_name)
+
+            # torch.save({'a2b': self.gen_a2b_s[i].state_dict(), 'b2a': self.gen_b2a_s[i].state_dict()}, gen_name)
+            # torch.save({'a2b': self.dis_a2b_s[i].state_dict(), 'b2a': self.dis_b2a_s[i].state_dict()}, dis_name)
+
             if self.do_dis_council:
-                torch.save({'a': self.dis_council_a_s[i].state_dict(), 'b': self.dis_council_b_s[i].state_dict()},
-                           dis_council_name)
+                if self.do_a2b_conf:
+                    torch.save({'a2b': self.dis_council_a2b_s[i].state_dict()}, 'a2b_' + dis_council_name)
+                if self.do_b2a_conf:
+                    torch.save({'b2a': self.dis_council_b2a_s[i].state_dict()}, 'b2a_' + dis_council_name)
                 torch.save({'gen': self.gen_opt_s[i].state_dict(), 'dis': self.dis_opt_s[i].state_dict(),
                             'dis_council': self.dis_council_opt_s[i].state_dict()}, opt_name)
             else:
