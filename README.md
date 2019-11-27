@@ -7,7 +7,10 @@ Ori Nizan , [Ayellet Tal](http://webee.technion.ac.il/~ayellet/),
 ![gan_council_overview](/images/gan_council_overview.png)
 
 ### Training:
+#### selfi2anime:
 python train.py --config configs/anime2face_council_folder.yaml --output_path ./outputs/council_anime2face_256_256 --resume 
+#### glasses removel:
+python train.py --config configs/galsses_council_dis_folder.yaml --output_path ./outputs/council_glasses_128_128 --resume 
 
 ### Testing:
 
