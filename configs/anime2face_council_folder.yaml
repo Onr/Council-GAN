@@ -79,13 +79,6 @@ council:
   council_start_at_iter: 1000  # start using the council loss for the specified iteration
 
 
-distrbution_match:
-  do_dist_match_origin_domin_loss: True
-  inblaceRatio_A: 0.99999-0.00001
-  inblaceRatio_B: 0.999-0.001
-  RunTestsIteration: 100
-  testFidIteration: 100
-
 # data options
 do_a2b: False
 do_b2a: True
@@ -132,6 +125,8 @@ misc:
   test_Fid_iter: 1_000
   test_Fid_num_of_im: 100
   do_telegram_report: True  # set to true to have progress report using telegram. set to True and follow the instructions
+  do_telegram_send_config_file: True
+  do_telegram_report_add_prefix: id_1_
 
 
 

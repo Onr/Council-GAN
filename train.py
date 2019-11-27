@@ -139,11 +139,11 @@ if config['misc']['do_telegram_report']:
 
     telegram_bot = telegram.Bot(token=confidential_conf['bot_token'])
     def telegram_bot_send_message(bot_message):
-        telegram_bot.send_message(chat_id=confidential_conf['chat_id'], text=bot_message)
+        telegram_bot.send_message(chat_id=confidential_conf['chat_id'], text=config['misc']['do_telegram_report_add_prefix'] + bot_message)
     def telegram_bot_send_photo(bot_image, caption=None):
-        telegram_bot.send_photo(chat_id=confidential_conf['chat_id'], photo=bot_image, caption=caption)
+        telegram_bot.send_photo(chat_id=confidential_conf['chat_id'], photo=bot_image, caption=config['misc']['do_telegram_report_add_prefix'] + caption)
     def telegram_bot_send_photo_big(bot_image_path, filename=None):
-        telegram_bot.send_document(chat_id=confidential_conf['chat_id'], document=open(bot_image_path, 'rb'), filename=filename)
+        telegram_bot.send_document(chat_id=confidential_conf['chat_id'], document=open(bot_image_path, 'rb'), filename=config['misc']['do_telegram_report_add_prefix'] + filename)
 
 def test_fid(dataset1, dataset2, iteration, train_writer, name, m1=None, s1=None, retun_m1_s1=False, batch_size=10, dims=2048, cuda=True):
     import pytorch_fid.fid_score
@@ -171,17 +171,20 @@ def test_fid(dataset1, dataset2, iteration, train_writer, name, m1=None, s1=None
 t = time.time()
 dis_iter = 1
 try:
-    if config['misc']['do_telegram_report'] :
+    if config['misc']['do_telegram_report']:
         telegram_bot_send_message('Started Training!')
-        send_telegram_config = False
+        send_telegram_config = config['misc']['do_telegram_send_config_file']
         if send_telegram_config:
-            telegram_bot_send_message('Configuration:')
-            with open(opts.config, 'r') as tmp_conf:
-                message = tmp_conf.readlines()
-                for cur_message in message:
-                    if len(cur_message) < 2:
-                        continue
-                    telegram_bot_send_message(cur_message)
+            try:
+                telegram_bot_send_message('Configuration:')
+                with open(opts.config, 'r') as tmp_conf:
+                    message = tmp_conf.readlines()
+                    for cur_message in message:
+                        if len(cur_message) < 2:
+                            continue
+                        telegram_bot_send_message(cur_message)
+            except:
+                print('telegram config message send failed')
 
     while True:
         tmp_train_loader_a, tmp_train_loader_b = (train_loader_a[0], train_loader_b[0])
@@ -194,7 +197,6 @@ try:
 
             if iterations > max_iter:
                 sys.exit('Finish training')
-
 
             # Main training code
             config['iteration'] = iterations
