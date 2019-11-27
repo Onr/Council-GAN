@@ -9,6 +9,6 @@ Ori Nizan , [Ayellet Tal](http://webee.technion.ac.il/~ayellet/),
 ### Training:
 python train.py --config configs/anime2face_council_folder.yaml --output_path ./outputs/council_anime2face_256_256 --resume 
 
+### Testing:
 
-#### 
-code is based on [MUNIT](https://github.com/NVlabs/MUNIT) implementition
+#### Citation
