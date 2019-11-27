@@ -1,5 +1,3 @@
-# Copyright (C) 2018 NVIDIA Corporation.  All rights reserved.
-# Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 
 # logger options
 image_save_iter: 500          # How often do you want to save output images during training
@@ -11,7 +9,7 @@ log_iter: 1                   # How often do you want to log the training stats
 # optimization options
 random_seed: 1
 max_iter: 1500000             # maximum number of training iterations
-batch_size: 2                 # batch size
+batch_size: 3                 # batch size
 weight_decay: 0.0001          # weight decay
 beta1: 0.5                    # Adam parameter
 beta2: 0.999                  # Adam parameter
@@ -30,14 +28,14 @@ vgg_w: 0                      # weight of domain-invariant perceptual loss
 council_w: 13                 # weight of Council loss
 council_abs_w: 0              # weight of Council loss abs between images if you use this loss there should be no need to use the regular council_w as well (with this loss active there will be less or no multimodal output)
 council_abs_gray_scale: False # is set to true the council loss will use the gray scale image not the rgb ones
-mask_zero_or_one_w: 0         # weight of part of the focus loss. how much the mask should approach zero or ones
+mask_zero_or_one_w: 0         # weight of part of the focus loss.controls how much the mask should approach binery values (zeros or ones)
 mask_zero_or_one_center: 0.5
 mask_zero_or_one_epsilon: 0.01
-mask_total_w: 0               # weight of the 2nd part of the focus loss. how much the mask should be small
+mask_total_w: 0               # weight of the 2nd part of the focus loss. controls how much the mask should be small
 
-abs_beginning_end: 0
-abs_beginning_end_less_by: 1
-abs_beginning_end_minimume: 0
+abs_beginning_end: 0          # weight of abs loss between the input image and the generated one
+abs_beginning_end_less_by: 1  # decrees the weight abs loss by that amount
+abs_beginning_end_minimume: 0 # the minimal value abs loss should reach and stay on
 
 do_w_loss_matching: True      # match between the mean of the gan and the council loss (mean of the last "loss_matching_hist_size" sampels
 loss_matching_hist_size: 100  # the history to do avereg on so the gan loss and the council loss will match
@@ -68,7 +66,7 @@ dis:
   pad_type: zero              # padding type [zero/reflect]
   useRandomGen: False         # when coucil is used each discriminetor is trained agest all generators making them more foucos on commen domain featcuers
   do_Dis_only_gray: False
-  numberOf_dis_relative_iteration: 1
+  numberOf_dis_relative_iteration: 1 # TODO check
 
 council:
   council_size: 4             # number of council members
@@ -133,6 +131,7 @@ misc:
   do_test_Fid: True # True
   test_Fid_iter: 1_000
   test_Fid_num_of_im: 100
+  do_telegram_report: True
 
 
 

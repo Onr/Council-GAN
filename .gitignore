@@ -14,3 +14,4 @@ src/yaml_generator.py
 *.zip
 *.pkl
 *.pyc
+confidential_do_not_upload_to_github.yaml

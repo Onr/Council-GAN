@@ -78,7 +78,6 @@ class Council_Trainer(nn.Module):
 
 
 
-        self.do_mine_test = False
         self.do_council_loss = None
 
         if self.do_dis_council:
@@ -475,6 +474,7 @@ class Council_Trainer(nn.Module):
             # self.do_council_loss = hyperparameters['council']['flipOnOff_start_with']
             self.do_council_loss = True
         if hyperparameters['iteration'] < hyperparameters['council']['council_start_at_iter']:
+
             self.do_council_loss = False
         self.council_loss_ba_s = []
         self.council_loss_ab_s = []
