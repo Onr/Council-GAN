@@ -1,6 +1,6 @@
 
 # logger options
-image_save_iter: 500          # How often do you want to save output images during training
+image_save_iter:  500         # How often do you want to save output images during training
 image_display_iter: 100       # How often do you want to display output images during training
 display_size: 16              # How many images do you want to display each time
 snapshot_save_iter: 5000      # How often do you want to save trained models
@@ -131,7 +131,7 @@ misc:
   do_test_Fid: True # True
   test_Fid_iter: 1_000
   test_Fid_num_of_im: 100
-  do_telegram_report: True
+  do_telegram_report: True  # set to true to have progress report using telegram. set to True and follow the instructions
 
 
 
