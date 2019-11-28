@@ -26,6 +26,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='configs/edges2handbags_folder', help='Path to the config file.')
 parser.add_argument('--input_folder', type=str, help="input image folder")
 parser.add_argument('--output_folder', type=str, help="output image folder")
+parser.add_argument('--output_path', type=str, default='.outputs', help="outputs path")
+
 parser.add_argument('--checkpoint', type=str, help="checkpoint of autoencoders")
 parser.add_argument('--b2a', action='store_true', help=" whether to run b2a defult a2b")
 parser.add_argument('--seed', type=int, default=1, help="random seed")
@@ -119,7 +121,7 @@ for i, (images, names) in tqdm(enumerate(zip(data_loader, image_names)), total=n
 
 
         basename = os.path.basename(names[1])
-        output_folder = os.path.join(opts.output_folder, 'test_res')
+        output_folder = os.path.join(opts.output_path, 'test_res')
         if only_one:
             path = os.path.join(output_folder, opts.checkpoint[-11:-3] + "_%02d" % j, data_name + '_out_' + str(curr_image_num) + '_' + str(j) + '.jpg')
             path_all_in_one = os.path.join(output_folder, opts.checkpoint[-11:-3] + '_all_in_1', data_name + '_out_' + str(curr_image_num) + '_' + str(j) + '.jpg')

@@ -40,7 +40,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='configs/glasses_folder.yaml', help='Path to the config file.')
 parser.add_argument('--output_path', type=str, default='.outputs', help="outputs path")
 parser.add_argument("--resume", action="store_true")
-
 opts = parser.parse_args()
 
 
@@ -82,7 +81,6 @@ shutil.copy(opts.config, os.path.join(config_backup_folder, 'config_backup_ ' + 
 
 m1_1_a2b, s1_1_a2b, m1_1_b2a, s1_1_b2a = None, None, None, None # save statisices for the fid calculation
 
-
 # Start training
 iterations = trainer.resume(checkpoint_directory, hyperparameters=config) if opts.resume else 0
 
@@ -98,8 +96,10 @@ if config['misc']['start_tensor_board']:
     print(colored('tensorboard board launched at http://127.0.0.1:' + str(port), color='yellow', attrs=['underline', 'bold', 'blink', 'reverse']))
 train_writer = tensorboardX.SummaryWriter(log_directory, purge_step=iterations)
 
-
 if config['misc']['do_telegram_report']:
+    import telegram
+    from telegram.ext import Updater, MessageHandler, Filters
+
     confidential_yaml_file_path = './confidential_do_not_upload_to_github.yaml'
     if not os.path.exists(confidential_yaml_file_path):
         with open(confidential_yaml_file_path, 'w') as confidential_yaml_file:
@@ -111,8 +111,6 @@ if config['misc']['do_telegram_report']:
 
 
     confidential_conf = get_config(confidential_yaml_file_path)
-    import telegram
-    from telegram.ext import Updater, MessageHandler, CommandHandler, Filters
 
     while confidential_conf['bot_token'] == 'xxxx':
         print(colored('TOKEN not defined yet'))
@@ -120,12 +118,15 @@ if config['misc']['do_telegram_report']:
         input('when you are done press Enter')
         confidential_conf = get_config(confidential_yaml_file_path)
 
+
     def telegram_command(update, context):
         # if str(update.message.text) == 'cofig':
         #     with open(opts.config, 'r') as tmp_conf:
         #         telegram_bot_send_message(tmp_conf.read())
         context.bot.sendMessage(update.message.chat_id, text='enter chat_id in to: ' + confidential_yaml_file_path + ' as:')
         context.bot.sendMessage(update.message.chat_id, text='chat_id: ' + str(update.message.chat_id))
+
+
 
     try:
         updater = Updater(token=confidential_conf['bot_token'], use_context=True)
@@ -147,6 +148,7 @@ if config['misc']['do_telegram_report']:
         telegram_bot.send_photo(chat_id=confidential_conf['chat_id'], photo=bot_image, caption=config['misc']['telegram_report_add_prefix'] + caption)
     def telegram_bot_send_document(bot_document_path, filename=None):
         telegram_bot.send_document(chat_id=confidential_conf['chat_id'], document=open(bot_document_path, 'rb'), filename=config['misc']['telegram_report_add_prefix'] + filename)
+
 
 def test_fid(dataset1, dataset2, iteration, train_writer, name, m1=None, s1=None, retun_m1_s1=False, batch_size=10, dims=2048, cuda=True):
     import pytorch_fid.fid_score
