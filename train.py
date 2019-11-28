@@ -127,10 +127,13 @@ if config['misc']['do_telegram_report']:
         context.bot.sendMessage(update.message.chat_id, text='enter chat_id in to: ' + confidential_yaml_file_path + ' as:')
         context.bot.sendMessage(update.message.chat_id, text='chat_id: ' + str(update.message.chat_id))
 
-    updater = Updater(token=confidential_conf['bot_token'], use_context=True)
-    dispatcher = updater.dispatcher
-    dispatcher.add_handler(MessageHandler(Filters.text, telegram_command))
-    updater.start_polling()
+    try:
+        updater = Updater(token=confidential_conf['bot_token'], use_context=True)
+        dispatcher = updater.dispatcher
+        dispatcher.add_handler(MessageHandler(Filters.text, telegram_command))
+        updater.start_polling()
+    except Exception as e:
+        print(e)
 
     while confidential_conf['chat_id'] == 'xxxx':
         print(colored('CHAT ID is not defined send your telegram bot a random message to get your chat id, then enter it into ' + confidential_yaml_file_path, color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
@@ -139,11 +142,11 @@ if config['misc']['do_telegram_report']:
 
     telegram_bot = telegram.Bot(token=confidential_conf['bot_token'])
     def telegram_bot_send_message(bot_message):
-        telegram_bot.send_message(chat_id=confidential_conf['chat_id'], text=config['misc']['do_telegram_report_add_prefix'] + bot_message)
+        telegram_bot.send_message(chat_id=confidential_conf['chat_id'], text=config['misc']['telegram_report_add_prefix'] + bot_message)
     def telegram_bot_send_photo(bot_image, caption=None):
-        telegram_bot.send_photo(chat_id=confidential_conf['chat_id'], photo=bot_image, caption=config['misc']['do_telegram_report_add_prefix'] + caption)
-    def telegram_bot_send_photo_big(bot_image_path, filename=None):
-        telegram_bot.send_document(chat_id=confidential_conf['chat_id'], document=open(bot_image_path, 'rb'), filename=config['misc']['do_telegram_report_add_prefix'] + filename)
+        telegram_bot.send_photo(chat_id=confidential_conf['chat_id'], photo=bot_image, caption=config['misc']['telegram_report_add_prefix'] + caption)
+    def telegram_bot_send_document(bot_document_path, filename=None):
+        telegram_bot.send_document(chat_id=confidential_conf['chat_id'], document=open(bot_document_path, 'rb'), filename=config['misc']['telegram_report_add_prefix'] + filename)
 
 def test_fid(dataset1, dataset2, iteration, train_writer, name, m1=None, s1=None, retun_m1_s1=False, batch_size=10, dims=2048, cuda=True):
     import pytorch_fid.fid_score
@@ -176,13 +179,7 @@ try:
         send_telegram_config = config['misc']['do_telegram_send_config_file']
         if send_telegram_config:
             try:
-                telegram_bot_send_message('Configuration:')
-                with open(opts.config, 'r') as tmp_conf:
-                    message = tmp_conf.readlines()
-                    for cur_message in message:
-                        if len(cur_message) < 2:
-                            continue
-                        telegram_bot_send_message(cur_message)
+                telegram_bot_send_document(bot_document_path=opts.config, filename='config.txt')
             except:
                 print('telegram config message send failed')
 
@@ -334,15 +331,15 @@ try:
                     train_writer.add_image('a2b/train', train_gen_a2b_im, iterations)
                     train_writer.add_image('a2b/test', test_gen_a2b_im, iterations)
                     if config['misc']['do_telegram_report']:
-                        telegram_bot_send_photo_big(os.path.join(image_directory, 'gen_a2b_' + 'train_%08d' % (iterations + 1) + '.jpg'), filename='train_gen_a2b_im-iteration: ' + str(iterations) + '.jpg')
-                        telegram_bot_send_photo_big(os.path.join(image_directory, 'gen_a2b_' + 'test_%08d' % (iterations + 1) + '.jpg'), filename='test_gen_a2b_im-iteration: ' + str(iterations) + '.jpg')
+                        telegram_bot_send_document(os.path.join(image_directory, 'gen_a2b_' + 'train_%08d' % (iterations + 1) + '.jpg'), filename='train_gen_a2b_im-iteration: ' + str(iterations) + '.jpg')
+                        telegram_bot_send_document(os.path.join(image_directory, 'gen_a2b_' + 'test_%08d' % (iterations + 1) + '.jpg'), filename='test_gen_a2b_im-iteration: ' + str(iterations) + '.jpg')
 
                 if config['do_b2a']:
                     train_writer.add_image('b2a/train', train_gen_b2a_im, iterations)
                     train_writer.add_image('b2a/test', test_gen_b2a_im, iterations)
                     if config['misc']['do_telegram_report']:
-                        telegram_bot_send_photo_big(os.path.join(image_directory, 'gen_b2a_' + 'train_%08d' % (iterations + 1) + '.jpg'), filename='train_gen_b2a_im-iteration: ' + str(iterations) + '.jpg')
-                        telegram_bot_send_photo_big(os.path.join(image_directory, 'gen_b2a_' + 'test_%08d' % (iterations + 1) + '.jpg'), filename='test_gen_b2a_im-iteration: ' + str(iterations) + '.jpg')
+                        telegram_bot_send_document(os.path.join(image_directory, 'gen_b2a_' + 'train_%08d' % (iterations + 1) + '.jpg'), filename='train_gen_b2a_im-iteration: ' + str(iterations) + '.jpg')
+                        telegram_bot_send_document(os.path.join(image_directory, 'gen_b2a_' + 'test_%08d' % (iterations + 1) + '.jpg'), filename='test_gen_b2a_im-iteration: ' + str(iterations) + '.jpg')
 
                 # HTML
                 write_html(output_directory + "/index.html", iterations + 1, config['image_save_iter'], 'images', do_a2b=config['do_a2b'], do_b2a=config['do_b2a'])
