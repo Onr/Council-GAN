@@ -8,6 +8,11 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
 
 ### Training:
 #### selfi2anime:
+download the selfie to anime dataset:
+    
+    bash ./scripts/download.sh selfie2anime
+and run:    
+   
     python train.py --config configs/anime2face_council_folder.yaml --output_path ./outputs/council_anime2face_256_256 --resume 
 #### glasses removel:
     python train.py --config configs/galsses_council_folder.yaml --output_path ./outputs/council_glasses_128_128 --resume 
