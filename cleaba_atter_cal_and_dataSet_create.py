@@ -2,54 +2,56 @@
 import os
 from shutil import copyfile
 from tqdm import tqdm
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--path', type=str, default='./datasets/celeba/', help='Path to celeba datasetfolder.')
+parser.add_argument('--attr', type=str, default='Eyeglasses', help='what atter to devide the dataset with '
+                                                                   '[# \'Male\' # \'Eyeglasses\' # \'Blond_Hair\' # \'Gray_Hair\' '
+                                                                   '# \'Black_Hair\' #\' Brown_Hair\' etc... ')
+opts = parser.parse_args()
+
+path = opts.path
 
 # path = './datasets/celeba/'
-path = './datasets/CelebA'
-DataPath = path + '/Img/img_align_celeba'
+DataPath = os.path.join(path, 'images')
+
+# path = './datasets/CelebA'
+# DataPath = path + '/Img/img_align_celeba'
 
 
-f = open(path + '/Anno/list_attr_celeba.txt', "r")
-f_eval = open(path + '/Eval/list_eval_partition.txt', "r")
+f = open(os.path.join(path, 'list_attr_celeba.txt', "r"))
+# f_eval = open(path, 'Eval', 'list_eval_partition.txt', "r")
 num_of_images = int(f.readline())
 tags = f.readline().split()
 print('num of images: ' + str(num_of_images))
 print('tags:')
 print(str(tags))
 
-tag_to_use_main = 'Male'
-tag_to_use_sub = 'Blond_Hair'  # 'Blond_Hair' # 'Eyeglasses' # 'Gray_Hair' # 'Black_Hair' #' Brown_Hair'
+tag_to_use_main = opts.attr
+# tag_to_use_sub = 'Blond_Hair'  # 'Blond_Hair' # 'Eyeglasses' # 'Gray_Hair' # 'Black_Hair' #' Brown_Hair'
 index_main = tags.index(tag_to_use_main) + 1
-index_sub = tags.index(tag_to_use_sub) + 1
+# index_sub = tags.index(tag_to_use_sub) + 1
 
 
-if not os.path.exists(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + tag_to_use_main + '/' + tag_to_use_sub):
-    os.makedirs(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + tag_to_use_main + '/' + tag_to_use_sub)
-if not os.path.exists(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + tag_to_use_main + '/not_' + tag_to_use_sub):
-    os.makedirs(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + tag_to_use_main + '/not_' + tag_to_use_sub)
-
-if not os.path.exists(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/not_' + tag_to_use_main + '/' + tag_to_use_sub):
-    os.makedirs(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/not_' + tag_to_use_main + '/' + tag_to_use_sub)
-if not os.path.exists(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/not_' + tag_to_use_main + '/not_' + tag_to_use_sub):
-    os.makedirs(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/not_' + tag_to_use_main + '/not_' + tag_to_use_sub)
+if not os.path.exists(os.path.join(path, 'train', tag_to_use_main)):
+    os.makedirs(os.path.join(path, 'train', tag_to_use_main))
+if not os.path.exists(os.path.join(path, 'train', 'not_' + tag_to_use_main)):
+    os.makedirs(os.path.join(path, 'train', 'not_' + tag_to_use_main))
 
 
-if not os.path.exists(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + tag_to_use_main + '/' + tag_to_use_sub + '_test'):
-    os.makedirs(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + tag_to_use_main + '/' + tag_to_use_sub + '_test')
-if not os.path.exists(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + tag_to_use_main + '/not_' + tag_to_use_sub + '_test'):
-    os.makedirs(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + tag_to_use_main + '/not_' + tag_to_use_sub + '_test')
-
-if not os.path.exists(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/not_' + tag_to_use_main + '/' + tag_to_use_sub + '_test'):
-    os.makedirs(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/not_' + tag_to_use_main + '/' + tag_to_use_sub + '_test')
-if not os.path.exists(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/not_' + tag_to_use_main + '/not_' + tag_to_use_sub + '_test'):
-    os.makedirs(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/not_' + tag_to_use_main + '/not_' + tag_to_use_sub + '_test')
+if not os.path.exists(os.path.join(path, 'test',  tag_to_use_main)):
+    os.makedirs(os.path.join(path, 'test',  tag_to_use_main))
+if not os.path.exists(os.path.join(path, 'test', '/not_' + tag_to_use_main)):
+    os.makedirs(os.path.join(path, 'test', '/not_' + tag_to_use_main))
 
 
-f_A_1 = open(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + tag_to_use_main + '_' + tag_to_use_sub + ".txt", "w")
-f_A_2 = open(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + tag_to_use_main + '_not_' + tag_to_use_sub + ".txt", "w")
-f_B_1 = open(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + '/' + 'not_' + tag_to_use_main + '/' + tag_to_use_sub + '/' + 'not_' + tag_to_use_main + '_' + tag_to_use_sub + ".txt", "w")
-f_B_2 = open(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + 'not_' + tag_to_use_main + '/' + tag_to_use_sub + '/' + 'not_' + tag_to_use_main + '_not_' + tag_to_use_sub + ".txt", "w")
 
-f_all_info = open(path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + tag_to_use_main + '_' + tag_to_use_sub + "_info.txt", "w")
+
+
+
+
+f_all_info = open(os.path.join(path, tag_to_use_main + "_info.txt", "w"))
 
 # print(index_main)
 # print(index_sub)
@@ -61,28 +63,19 @@ numOf_B_2 = 0
 
 for line in tqdm(f, total=num_of_images):
   curr_line = line.split()
-  eval_partition = int(f_eval.readline().split()[1])
-  addTest = ''
-  add_eval = ''
-  if eval_partition != 0:
-      addTest = '_test'
-      add_eval = str(eval_partition) + '_'
+
 
   fileEnder = 'png'
   file_name = curr_line[0].split('.')[0] + '.' + fileEnder
   srcFile = DataPath + '/' + file_name
   if int(curr_line[index_main]) == 1:
-      if int(curr_line[index_sub]) == 1:
-          destFile = path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + tag_to_use_main + '/' + tag_to_use_sub + addTest + '/' + add_eval + curr_line[0] + '.' + fileEnder
-          numOf_A_1 += 1
-          f_A_1.write(curr_line[0] + '\n')
-          copyfile(srcFile, destFile)
+      destFile = path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + tag_to_use_main + '/' + tag_to_use_sub + addTest + '/' + add_eval + \
+                 curr_line[0] + '.' + fileEnder
+      numOf_A_1 += 1
+      copyfile(srcFile, destFile)
 
-      else:
-          destFile = path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/' + tag_to_use_main + '/not_' + tag_to_use_sub + addTest + '/' + add_eval + curr_line[0] + '.' + fileEnder
-          numOf_A_2 += 1
-          f_A_2.write(curr_line[0] + '\n')
-          copyfile(srcFile, destFile)
+
+
   else:
       if int(curr_line[index_sub]) == 1:
           destFile = path + '/' + tag_to_use_main + '/' + tag_to_use_sub + '/not_' + tag_to_use_main + '/' + tag_to_use_sub + addTest + '/' + add_eval + curr_line[0] + '.' + fileEnder
