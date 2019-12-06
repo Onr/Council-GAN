@@ -67,7 +67,7 @@ def get_all_data_loaders(conf):
                         trainB = 'trainB'
                         testA = 'testA'
                         testB = 'testB'
-
+                    #test
 
                     train_loader_a.append(get_data_loader_folder(os.path.join(conf['data_root'], trainA), batch_size, True,
                                                             new_size_a, height, width, num_workers, True, config=conf, is_data_A=True))
