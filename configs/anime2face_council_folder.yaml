@@ -41,8 +41,8 @@ do_w_loss_matching: True      # match between the mean of the gan and the counci
 loss_matching_hist_size: 100  # the history to do avereg on so the gan loss and the council loss will match
 
 inbalenceDataSets:
-  test_inbalaced_sub_dataset: True
-  number_of_sub_dataset: 2
+  test_inbalaced_sub_dataset: False
+  number_of_sub_dataset: 1
 
 # model options
 gen:
