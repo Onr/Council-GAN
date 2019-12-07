@@ -24,7 +24,7 @@ try:
 except ImportError:  # will be 3.x series
     pass
 import os
-import sys
+import sys, traceback
 import tensorboardX
 import shutil
 import threading
@@ -143,12 +143,21 @@ if config['misc']['do_telegram_report']:
 
     telegram_bot = telegram.Bot(token=confidential_conf['bot_token'])
     def telegram_bot_send_message(bot_message):
-        telegram_bot.send_message(chat_id=confidential_conf['chat_id'], text=config['misc']['telegram_report_add_prefix'] + bot_message)
+        try:
+            telegram_bot.send_message(chat_id=confidential_conf['chat_id'], text=config['misc']['telegram_report_add_prefix'] + bot_message)
+        except:
+            print('telegram send_message Failed')
     def telegram_bot_send_photo(bot_image, caption=None):
-        telegram_bot.send_photo(chat_id=confidential_conf['chat_id'], photo=bot_image, caption=config['misc']['telegram_report_add_prefix'] + caption)
-    def telegram_bot_send_document(bot_document_path, filename=None):
-        telegram_bot.send_document(chat_id=confidential_conf['chat_id'], document=open(bot_document_path, 'rb'), filename=config['misc']['telegram_report_add_prefix'] + filename)
+        try:
+            telegram_bot.send_photo(chat_id=confidential_conf['chat_id'], photo=bot_image, caption=config['misc']['telegram_report_add_prefix'] + caption)
+        except:
+            print('telegram send_photo Failed')
 
+    def telegram_bot_send_document(bot_document_path, filename=None):
+        try:
+            telegram_bot.send_document(chat_id=confidential_conf['chat_id'], document=open(bot_document_path, 'rb'), filename=config['misc']['telegram_report_add_prefix'] + filename)
+        except:
+            print('telegram send_document Failed')
 
 def test_fid(dataset1, dataset2, iteration, train_writer, name, m1=None, s1=None, retun_m1_s1=False, batch_size=10, dims=2048, cuda=True):
     import pytorch_fid.fid_score
@@ -366,6 +375,10 @@ try:
                 if config['misc']['do_telegram_report']:
                     telegram_bot_send_message('snapshot saved iter: ' + str(iterations))
 except Exception as e:
+    print('Error')
+    print('-' * 60)
+    traceback.print_exc(file=sys.stdout)
+    print('-' * 60)
     print(e)
     print(colored('Training STOPED!', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
     if config['misc']['do_telegram_report']:
