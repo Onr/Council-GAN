@@ -16,8 +16,8 @@ print('num of images: ' + str(num_of_images))
 print('tags:')
 print(str(tags))
 
-tag_to_use_main = 'Male'
-tag_to_use_sub = 'Blond_Hair'  # 'Blond_Hair' # 'Eyeglasses' # 'Gray_Hair' # 'Black_Hair' #' Brown_Hair'
+tag_to_use_main = 'Eyeglasses'
+tag_to_use_sub = 'Male'  # 'Blond_Hair' # 'Eyeglasses' # 'Gray_Hair' # 'Black_Hair' #' Brown_Hair'
 index_main = tags.index(tag_to_use_main) + 1
 index_sub = tags.index(tag_to_use_sub) + 1
 

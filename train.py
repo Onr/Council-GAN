@@ -105,7 +105,7 @@ if config['misc']['do_telegram_report']:
         with open(confidential_yaml_file_path, 'w') as confidential_yaml_file:
             confidential_yaml_file.write('bot_token: xxxx\n')
             confidential_yaml_file.write('chat_id: xxxx')
-        print(colored('create a telegram bot using a chat with BotFather and enter its token into ' + confidential_yaml_file_path, color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
+        print(colored('create a telegram bot using a chat with \"BotFather\" and enter its token into ' + confidential_yaml_file_path, color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
         print('you can turn telegram report off from the config.yaml file')
         input('when you are done press Enter')
 
@@ -128,18 +128,17 @@ if config['misc']['do_telegram_report']:
 
 
 
-    try:
-        updater = Updater(token=confidential_conf['bot_token'], use_context=True)
-        dispatcher = updater.dispatcher
-        dispatcher.add_handler(MessageHandler(Filters.text, telegram_command))
-        updater.start_polling()
-    except Exception as e:
-        print(e)
+    updater = Updater(token=confidential_conf['bot_token'], use_context=True)
+    dispatcher = updater.dispatcher
+    dispatcher.add_handler(MessageHandler(Filters.text, telegram_command))
+    updater.start_polling()
+
 
     while confidential_conf['chat_id'] == 'xxxx':
         print(colored('CHAT ID is not defined send your telegram bot a random message to get your chat id, then enter it into ' + confidential_yaml_file_path, color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
         input('when you are done press Enter')
         confidential_conf = get_config(confidential_yaml_file_path)
+    updater.stop()
 
     telegram_bot = telegram.Bot(token=confidential_conf['bot_token'])
     def telegram_bot_send_message(bot_message):

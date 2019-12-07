@@ -127,7 +127,6 @@ class Council_Trainer(nn.Module):
         display_size = int(hyperparameters['display_size'])
         self.s_a = torch.randn(display_size, self.style_dim, 1, 1).cuda()
         self.s_b = torch.randn(display_size, self.style_dim, 1, 1).cuda()
-
         # Setup the optimizers
         beta1 = hyperparameters['beta1']
         beta2 = hyperparameters['beta2']
