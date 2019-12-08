@@ -9,15 +9,15 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
 ## Usage
 
 ### Downloading the dataset
-download the selfie to anime dataset:
+#### download the selfie to anime dataset:
 
-    bash ./scripts/download.sh selfie2anime
+    bash ./scripts/download.sh U_GAT_IT_selfie2anime
 
-download the celeba glasses removal dataset:
+#### download the celeba glasses removal dataset:
 
     bash ./scripts/download.sh celeba_glasses_removal
     
-download the celeba male to female:
+#### download the celeba male to female:
 
     bash ./scripts/download.sh celeba_male2female
     
