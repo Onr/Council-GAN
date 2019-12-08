@@ -41,7 +41,7 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
             └──im8.jpg
             └── ...
 ```
-and change the data_root property to ./datasets/DATASET_NAME in the yaml file
+and change the data_root attribute to ./datasets/DATASET_NAME in the yaml file
 
 ### Training:
 #### selfi2anime: 
