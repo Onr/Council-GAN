@@ -30,7 +30,7 @@ elif [ $FILE == "celeba_glasses_removal" ]; then
 #  author={Kim, Junho and Kim, Minjae and Kang, Hyeonwoo and Lee, Kwanghee},
 #  journal={arXiv preprint arXiv:1907.10830},
 #  year={2019}
-  elif [ $FILE == "selfie2anime" ]; then
+  elif [ $FILE == "U_GAT_IT_selfie2anime" ]; then
     URL=https://www.dropbox.com/s/9lz6gwwwyyxpdnn/selfie2anime.zip?dl=0
     ZIP_FILE=./datasets/selfie2anime.zip
     mkdir -p ./datasets/
