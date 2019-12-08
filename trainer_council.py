@@ -354,22 +354,23 @@ class Council_Trainer(nn.Module):
             self.loss_gen_total_s.append(0)
 
             # masks should contain ones or zeros
-            if hyperparameters['mask_zero_or_one_w'] != 0:
-                if self.do_a2b_conf:
-                    self.loss_gen_mask_zero_one_ab_s.append(self.mask_zero_one_criterion(mask_ab_s[i], center=hyperparameters['mask_zero_or_one_center'], epsilon=hyperparameters['mask_zero_or_one_epsilon']))
-                    self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ab_s[i]
-                if self.do_b2a_conf:
-                    self.loss_gen_mask_zero_one_ba_s.append(self.mask_zero_one_criterion(mask_ba_s[i], center=hyperparameters['mask_zero_or_one_center'], epsilon=hyperparameters['mask_zero_or_one_epsilon']))
-                    self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i]
+            if hyperparameters['iteration'] < hyperparameters['foucos_loss_start_at_iter']:  # TODO test
+                if hyperparameters['mask_zero_or_one_w'] != 0:
+                    if self.do_a2b_conf:
+                        self.loss_gen_mask_zero_one_ab_s.append(self.mask_zero_one_criterion(mask_ab_s[i], center=hyperparameters['mask_zero_or_one_center'], epsilon=hyperparameters['mask_zero_or_one_epsilon']))
+                        self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ab_s[i]
+                    if self.do_b2a_conf:
+                        self.loss_gen_mask_zero_one_ba_s.append(self.mask_zero_one_criterion(mask_ba_s[i], center=hyperparameters['mask_zero_or_one_center'], epsilon=hyperparameters['mask_zero_or_one_epsilon']))
+                        self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i]
 
-            # masks should as small as possible to leave original domain with little changes
-            if hyperparameters['mask_total_w'] != 0:
-                if self.do_a2b_conf:
-                    self.loss_gen_mask_total_ab_s.append(self.mask_small_criterion(mask_ab_s[i]))
-                    self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ab_s[i]
-                if self.do_b2a_conf:
-                    self.loss_gen_mask_total_ba_s.append(self.mask_small_criterion(mask_ba_s[i]))
-                    self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ba_s[i]
+                # masks should as small as possible to leave original domain with little changes
+                if hyperparameters['mask_total_w'] != 0:
+                    if self.do_a2b_conf:
+                        self.loss_gen_mask_total_ab_s.append(self.mask_small_criterion(mask_ab_s[i]))
+                        self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ab_s[i]
+                    if self.do_b2a_conf:
+                        self.loss_gen_mask_total_ba_s.append(self.mask_small_criterion(mask_ba_s[i]))
+                        self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ba_s[i]
 
             # reconstruction loss
             if hyperparameters['recon_x_w'] != 0 and self.do_a2b_conf and self.do_b2a_conf:
