@@ -17,9 +17,24 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
 
     bash ./scripts/download.sh celeba_glasses_removal
     
-#### download the celeba male to female:
+#### download the celeba male to female dataset:
 
     bash ./scripts/download.sh celeba_male2female
+#### use your on dataset:
+├──datasets
+    └──DATASET NAME
+        ├──testA
+            └──im1.jpg
+            └──im2.jpg
+        ├──testB
+            └──im3.jpg
+            └──im4.jpg
+        ├──trainA
+            └──im5.jpg
+            └──im6.jpg
+        ├──trainB
+            └──im7.jpg
+            └──im8.jpg       
     
 ### Training:
 #### selfi2anime: 
