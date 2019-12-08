@@ -25,17 +25,21 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
 ├──datasets
     └──DATASET NAME
         ├──testA
-            └──im1.jpg
-            └──im2.jpg
+            ├──im1.jpg
+            ├──im2.jpg
+            └── ...
         ├──testB
             └──im3.jpg
             └──im4.jpg
+            └── ...
         ├──trainA
             └──im5.jpg
             └──im6.jpg
+            └── ...
         ├──trainB
             └──im7.jpg
-            └──im8.jpg       
+            └──im8.jpg
+            └── ...
 ```
 
 ### Training:
