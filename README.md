@@ -23,7 +23,7 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
 #### use your on dataset:
 ```
 ├──datasets
-    └──DATASET NAME
+    └──DATASET_NAME
         ├──testA
             ├──im1.jpg
             ├──im2.jpg
@@ -41,6 +41,7 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
             └──im8.jpg
             └── ...
 ```
+and change the data_root property to ./datasets/DATASET_NAME in the yaml file
 
 ### Training:
 #### selfi2anime: 
