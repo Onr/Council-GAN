@@ -21,6 +21,7 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
 
     bash ./scripts/download.sh celeba_male2female
 #### use your on dataset:
+```
 ├──datasets
     └──DATASET NAME
         ├──testA
@@ -35,7 +36,8 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
         ├──trainB
             └──im7.jpg
             └──im8.jpg       
-    
+```
+
 ### Training:
 #### selfi2anime: 
     python train.py --config configs/anime2face_council_folder.yaml --output_path ./outputs/council_anime2face_256_256 --resume 
