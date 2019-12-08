@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 FILE=$1
-if [ $FILE == "celeba_male2female" ]; then # taken from stargan https://github.com/yunjey/stargan
-    URL=https://www.dropbox.com/s/d1kjpkqklf0uw77/celeba.zip?dl=0
-    ZIP_FILE=./datasets/celeba.zip
+if [ $FILE == "celeba_male2female" ]; then
+    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/DataSet/celeba_male2female.zip?dl=0
+    ZIP_FILE=./datasets/celeba_male2female.zip
     mkdir -p ./datasets/
     wget -N $URL -O $ZIP_FILE
     unzip $ZIP_FILE -d ./datasets/
     rm $ZIP_FILE
 
-elif [ $FILE == "celeba_glasses_removal" ]; then # taken from stargan https://github.com/yunjey/stargan
-    URL=https://www.dropbox.com/s/d1kjpkqklf0uw77/celeba.zip?dl=0
-    ZIP_FILE=./datasets/celeba.zip
+elif [ $FILE == "celeba_glasses_removal" ]; then
+    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/DataSet/celeba_glasses.zip?dl=0
+    ZIP_FILE=./datasets/celeba_glasses.zip
     mkdir -p ./datasets/
     wget -N $URL -O $ZIP_FILE
     unzip $ZIP_FILE -d ./datasets/
