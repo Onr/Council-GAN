@@ -44,14 +44,14 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
 and change the data_root attribute to ./datasets/DATASET_NAME in the yaml file
 
 ### Training:
-#### selfi2anime: 
+#### selfie to anime: 
     python train.py --config configs/anime2face_council_folder.yaml --output_path ./outputs/council_anime2face_256_256 --resume 
 
 #### glasses removel:
     python train.py --config configs/galsses_council_folder.yaml --output_path ./outputs/council_glasses_128_128 --resume 
     
 #### male to female:
-    python train.py --config configs/male2female.yaml --output_path ./outputs/male2famle_256_256 --resume 
+    python train.py --config configs/male2female_council_folder.yaml --output_path ./outputs/male2famle_256_256 --resume 
 
 
 ### Testing:
