@@ -25,20 +25,20 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
 ├──datasets
     └──DATASET_NAME
         ├──testA
-            ├──im1.jpg
-            ├──im2.jpg
+            ├──im1.png
+            ├──im2.png
             └── ...
         ├──testB
-            ├──im3.jpg
-            ├──im4.jpg
+            ├──im3.png
+            ├──im4.png
             └── ...
         ├──trainA
-            ├──im5.jpg
-            ├──im6.jpg
+            ├──im5.png
+            ├──im6.png
             └── ...
         └──trainB
-            ├──im7.jpg
-            ├──im8.jpg
+            ├──im7.png
+            ├──im8.png
             └── ...
 ```
 and change the data_root attribute to ./datasets/DATASET_NAME in the yaml file
