@@ -61,20 +61,35 @@ class Council_Trainer(nn.Module):
         self.do_b2a_conf = hyperparameters['do_b2a']
         self.w_match_b2a_conf = 1
         self.w_match_a2b_conf = 1
+        self.w_match_focus_a2b_conf = 1
+        self.w_match_focus_b2a_conf = 1
+        self.w_match_focus_zero_one_a2b_conf = 1
+        self.w_match_focus_zero_one_b2a_conf = 1
 
         if self.do_a2b_conf:
             self.los_hist_gan_a2b_s = []
             self.los_hist_council_a2b_s = []
+            self.los_hist_focus_a2b_s = []
+            self.los_hist_focus_zero_one_a2b_s = []
         if self.do_b2a_conf:
             self.los_hist_gan_b2a_s = []
             self.los_hist_council_b2a_s = []
+            self.los_hist_focus_b2a_s = []
+            self.los_hist_focus_zero_one_b2a_s = []
+
         for ind in range(self.council_size):
             if self.do_a2b_conf:
                 self.los_hist_gan_a2b_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
                 self.los_hist_council_a2b_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
+                self.los_hist_focus_a2b_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
+                self.los_hist_focus_zero_one_a2b_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
+
             if self.do_b2a_conf:
                 self.los_hist_gan_b2a_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
                 self.los_hist_council_b2a_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
+                self.los_hist_focus_b2a_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
+                self.los_hist_focus_zero_one_b2a_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
+
 
 
 
@@ -354,23 +369,59 @@ class Council_Trainer(nn.Module):
             self.loss_gen_total_s.append(0)
 
             # masks should contain ones or zeros
-            if hyperparameters['iteration'] < hyperparameters['focus_loss']['foucos_loss_start_at_iter']:  # TODO test
+            if hyperparameters['iteration'] > hyperparameters['focus_loss']['focus_loss_start_at_iter']:
+
                 if hyperparameters['mask_zero_or_one_w'] != 0:
-                    if self.do_a2b_conf:
+                    if hyperparameters['do_a2b']:
                         self.loss_gen_mask_zero_one_ab_s.append(self.mask_zero_one_criterion(mask_ab_s[i], center=hyperparameters['focus_loss']['mask_zero_or_one_center'], epsilon=hyperparameters['focus_loss']['mask_zero_or_one_epsilon']))
-                        self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ab_s[i]
-                    if self.do_b2a_conf:
+                    if hyperparameters['do_b2a']:
                         self.loss_gen_mask_zero_one_ba_s.append(self.mask_zero_one_criterion(mask_ba_s[i], center=hyperparameters['focus_loss']['mask_zero_or_one_center'], epsilon=hyperparameters['focus_loss']['mask_zero_or_one_epsilon']))
-                        self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i]
+
+                    if self.do_w_loss_matching:
+                        if hyperparameters['do_a2b']:
+                            self.los_hist_focus_zero_one_a2b_s[i].append(self.loss_gen_mask_zero_one_ab_s[i].detach().cpu().numpy())
+                            self.los_hist_focus_zero_one_a2b_s[i].popleft()
+                            self.w_match_focus_zero_one_a2b_conf = np.mean(self.los_hist_gan_a2b_s[i]) / np.mean(self.los_hist_focus_zero_one_a2b_s[i])
+                            self.loss_gen_mask_zero_one_ab_s[i] *= self.w_match_focus_zero_one_a2b_conf
+                            self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ab_s[i]
+                        if hyperparameters['do_b2a']:
+                            self.los_hist_focus_zero_one_b2a_s[i].append(self.loss_gen_mask_zero_one_ba_s[i].detach().cpu().numpy())
+                            self.los_hist_focus_zero_one_b2a_s[i].popleft()
+                            self.w_match_focus_zero_one_b2a_conf = np.mean(self.los_hist_gan_b2a_s[i]) / np.mean(self.los_hist_focus_zero_one_b2a_s[i])
+                            self.loss_gen_mask_zero_one_ba_s[i] *= self.w_match_focus_zero_one_b2a_conf
+                            self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i]
+                    else:
+                        if hyperparameters['do_a2b']:
+                            self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ab_s[i]
+                        if hyperparameters['do_b2a']:
+                            self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i]
 
                 # masks should as small as possible to leave original domain with little changes
                 if hyperparameters['mask_total_w'] != 0:
-                    if self.do_a2b_conf:
+                    if hyperparameters['do_a2b']:
                         self.loss_gen_mask_total_ab_s.append(self.mask_small_criterion(mask_ab_s[i]))
-                        self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ab_s[i]
-                    if self.do_b2a_conf:
+                    if hyperparameters['do_b2a']:
                         self.loss_gen_mask_total_ba_s.append(self.mask_small_criterion(mask_ba_s[i]))
+
+                if self.do_w_loss_matching:
+                    if hyperparameters['do_a2b']:
+                        self.los_hist_focus_a2b_s[i].append(self.loss_gen_mask_total_ab_s[i].detach().cpu().numpy())
+                        self.los_hist_focus_a2b_s[i].popleft()
+                        self.w_match_focus_a2b_conf = np.mean(self.los_hist_gan_a2b_s[i]) / np.mean(self.los_hist_focus_a2b_s[i])
+                        self.loss_gen_mask_total_ab_s[i] *= self.w_match_focus_a2b_conf
+                        self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ab_s[i]
+                    if hyperparameters['do_b2a']:
+                        self.los_hist_focus_b2a_s[i].append(self.loss_gen_mask_total_ab_s[i].detach().cpu().numpy())
+                        self.los_hist_focus_b2a_s[i].popleft()
+                        self.w_match_focus_b2a_conf = np.mean(self.los_hist_gan_b2a_s[i]) / np.mean(self.los_hist_focus_b2a_s[i])
+                        self.loss_gen_mask_total_ba_s[i] *= self.w_match_focus_b2a_conf
                         self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ba_s[i]
+                else:
+                    if hyperparameters['do_a2b']:
+                        self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ab_s[i]
+                    if hyperparameters['do_b2a']:
+                        self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ba_s[i]
+
 
             # reconstruction loss
             if hyperparameters['recon_x_w'] != 0 and self.do_a2b_conf and self.do_b2a_conf:
