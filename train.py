@@ -337,6 +337,7 @@ try:
                     train_writer.add_image('a2b/train', train_gen_a2b_im, iterations)
                     train_writer.add_image('a2b/test', test_gen_a2b_im, iterations)
                     if config['misc']['do_telegram_report']:
+                        telegram_bot_send_message('iteration: ' + str(iterations))
                         telegram_bot_send_document(os.path.join(image_directory, 'gen_a2b_' + 'train_%08d' % (iterations + 1) + '.jpg'), filename='train_gen_a2b_im-iteration: ' + str(iterations) + '.jpg')
                         telegram_bot_send_document(os.path.join(image_directory, 'gen_a2b_' + 'test_%08d' % (iterations + 1) + '.jpg'), filename='test_gen_a2b_im-iteration: ' + str(iterations) + '.jpg')
 
@@ -344,6 +345,7 @@ try:
                     train_writer.add_image('b2a/train', train_gen_b2a_im, iterations)
                     train_writer.add_image('b2a/test', test_gen_b2a_im, iterations)
                     if config['misc']['do_telegram_report']:
+                        telegram_bot_send_message('iteration: ' + str(iterations))
                         telegram_bot_send_document(os.path.join(image_directory, 'gen_b2a_' + 'train_%08d' % (iterations + 1) + '.jpg'), filename='train_gen_b2a_im-iteration: ' + str(iterations) + '.jpg')
                         telegram_bot_send_document(os.path.join(image_directory, 'gen_b2a_' + 'test_%08d' % (iterations + 1) + '.jpg'), filename='test_gen_b2a_im-iteration: ' + str(iterations) + '.jpg')
 
