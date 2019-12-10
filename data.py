@@ -4,6 +4,7 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 """
 import torch.utils.data as data
 import os.path
+import torch.rand
 
 def default_loader(path):
     return Image.open(path).convert('RGB')
@@ -117,6 +118,46 @@ class ImageFolder(data.Dataset):
 
     def __getitem__(self, index):
         path = self.imgs[index]
+        img = self.loader(path)
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.return_paths:
+            return img, path
+        else:
+            return img
+
+    def __len__(self):
+        return len(self.imgs)
+
+
+
+
+class ImageFolder_Double(data.Dataset):
+ # TODO complete usege
+    def __init__(self, root1, root2, ratio_1_to_2, transform=None, return_paths=False,
+                 loader=default_loader):
+        self.ratio_1_to_2 = ratio_1_to_2
+        imgs1 = sorted(make_dataset(root1))
+        imgs2 = sorted(make_dataset(root2))
+        if len(imgs1) == 0:
+            raise(RuntimeError("Found 0 images in: " + root1 + "\n"
+                               "Supported image extensions are: " +
+                               ",".join(IMG_EXTENSIONS)))
+        if len(imgs2) == 0:
+            raise(RuntimeError("Found 0 images in: " + root2 + "\n"
+                               "Supported image extensions are: " +
+                               ",".join(IMG_EXTENSIONS)))
+
+        self.root1 = root1
+        self.root2 = root2
+        self.imgs1 = imgs1
+        self.imgs2 = imgs2
+        self.transform = transform
+        self.return_paths = return_paths
+        self.loader = loader
+
+    def __getitem__(self, index):
+        path = self.imgs1[index] if torch.rand(1) < self.ratio_1_to_2 else  self.imgs2[index]
         img = self.loader(path)
         if self.transform is not None:
             img = self.transform(img)
