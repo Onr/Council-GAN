@@ -4,7 +4,7 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 """
 import torch.utils.data as data
 import os.path
-import torch.rand
+import torch
 
 def default_loader(path):
     return Image.open(path).convert('RGB')
