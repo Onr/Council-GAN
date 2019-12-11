@@ -56,6 +56,7 @@ class Council_Trainer(nn.Module):
         self.mask_total_w_conf = hyperparameters['mask_total_w']
         self.batch_size_conf = hyperparameters['batch_size']
         self.do_w_loss_matching = hyperparameters['do_w_loss_matching']
+        self.do_w_loss_matching_focus = hyperparameters['focus_loss']['do_w_loss_matching_focus']
         self.los_matching_hist_size_conf = hyperparameters['loss_matching_hist_size']
         self.do_a2b_conf = hyperparameters['do_a2b']
         self.do_b2a_conf = hyperparameters['do_b2a']
@@ -377,7 +378,8 @@ class Council_Trainer(nn.Module):
                     if hyperparameters['do_b2a']:
                         self.loss_gen_mask_zero_one_ba_s.append(self.mask_zero_one_criterion(mask_ba_s[i], center=hyperparameters['focus_loss']['mask_zero_or_one_center'], epsilon=hyperparameters['focus_loss']['mask_zero_or_one_epsilon']))
 
-                    if self.do_w_loss_matching:
+                    if self.do_w_loss_matching_focus:
+                        print('===== 1 =====')
                         if hyperparameters['do_a2b']:
                             self.los_hist_focus_zero_one_a2b_s[i].append(self.loss_gen_mask_zero_one_ab_s[i].detach().cpu().numpy())
                             self.los_hist_focus_zero_one_a2b_s[i].popleft()
@@ -390,6 +392,9 @@ class Council_Trainer(nn.Module):
                             self.w_match_focus_zero_one_b2a_conf = np.mean(self.los_hist_gan_b2a_s[i]) / np.mean(self.los_hist_focus_zero_one_b2a_s[i])
                             self.loss_gen_mask_zero_one_ba_s[i] *= self.w_match_focus_zero_one_b2a_conf
                             self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i]
+                        print(self.w_match_focus_zero_one_a2b_conf)
+                        print(self.w_match_focus_zero_one_b2a_conf)
+                        print('===== 2 =====')
                     else:
                         if hyperparameters['do_a2b']:
                             self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ab_s[i]
@@ -403,7 +408,8 @@ class Council_Trainer(nn.Module):
                     if hyperparameters['do_b2a']:
                         self.loss_gen_mask_total_ba_s.append(self.mask_small_criterion(mask_ba_s[i]))
 
-                if self.do_w_loss_matching:
+                if self.do_w_loss_matching_focus:
+                    print('===== 3 =====')
                     if hyperparameters['do_a2b']:
                         self.los_hist_focus_a2b_s[i].append(self.loss_gen_mask_total_ab_s[i].detach().cpu().numpy())
                         self.los_hist_focus_a2b_s[i].popleft()
@@ -416,6 +422,9 @@ class Council_Trainer(nn.Module):
                         self.w_match_focus_b2a_conf = np.mean(self.los_hist_gan_b2a_s[i]) / np.mean(self.los_hist_focus_b2a_s[i])
                         self.loss_gen_mask_total_ba_s[i] *= self.w_match_focus_b2a_conf
                         self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ba_s[i]
+                    print(self.w_match_focus_a2b_conf)
+                    print(self.w_match_focus_b2a_conf)
+                    print('===== 4 =====')
                 else:
                     if hyperparameters['do_a2b']:
                         self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ab_s[i]
