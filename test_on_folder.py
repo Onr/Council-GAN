@@ -39,7 +39,6 @@ data_name = 'out'
 
 opts = parser.parse_args()
 
-
 torch.manual_seed(opts.seed)
 torch.cuda.manual_seed(opts.seed)
 

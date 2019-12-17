@@ -11,7 +11,7 @@ from networks import Vgg16
 from torch.autograd import Variable
 from torch.optim import lr_scheduler
 from torchvision import transforms
-from data import ImageFilelist, ImageFolder
+from data import ImageFilelist, ImageFolder, ImageFolder_Double
 import torch
 import torch.nn as nn
 import os
@@ -52,57 +52,66 @@ def get_all_data_loaders(conf):
     height = conf['crop_image_height']
     width = conf['crop_image_width']
 
+    train_loader_a, train_loader_b, test_loader_a, test_loader_b = [], [], [], []
     if 'data_root' in conf:
-        if 'inbalenceDataSets' in conf:
-            train_loader_a, train_loader_b, test_loader_a, test_loader_b = [], [], [], []
-            if (conf['inbalenceDataSets']['test_inbalaced_sub_dataset']):
-                for k in range(conf['inbalenceDataSets']['number_of_sub_dataset']):
-                    if conf['inbalenceDataSets']['number_of_sub_dataset'] > 1:
-                        trainA = os.path.join('trainA', str(k+1)) if os.path.isdir(os.path.join(conf['data_root'], 'trainA', str(k+1))) else 'trainA'
-                        trainB = os.path.join('trainB', str(k+1)) if os.path.isdir(os.path.join(conf['data_root'], 'trainB', str(k+1))) else 'trainB'
-                        testA = os.path.join('testA', str(k+1)) if os.path.isdir(os.path.join(conf['data_root'], 'testA', str(k+1))) else 'testA'
-                        testB = os.path.join('testB', str(k+1)) if os.path.isdir(os.path.join(conf['data_root'], 'testB', str(k+1))) else 'testB'
-                    else:
-                        trainA = 'trainA'
-                        trainB = 'trainB'
-                        testA = 'testA'
-                        testB = 'testB'
+        if 'inbalenceDataSets' in conf: # TODO remove option to not have inbalenceDatasets
+            if (conf['inbalenceDataSets']['imbalance_sub_dataset']):
+                # for k in range(conf['inbalenceDataSets']['number_of_sub_dataset']):
+                #     if conf['inbalenceDataSets']['number_of_sub_dataset'] > 1:
+                #         trainA = os.path.join('trainA', str(k+1)) if os.path.isdir(os.path.join(conf['data_root'], 'trainA', str(k+1))) else 'trainA'
+                #         trainB = os.path.join('trainB', str(k+1)) if os.path.isdir(os.path.join(conf['data_root'], 'trainB', str(k+1))) else 'trainB'
+                #         testA = os.path.join('testA', str(k+1)) if os.path.isdir(os.path.join(conf['data_root'], 'testA', str(k+1))) else 'testA'
+                #         testB = os.path.join('testB', str(k+1)) if os.path.isdir(os.path.join(conf['data_root'], 'testB', str(k+1))) else 'testB'
+                #     else:
+                #         trainA = 'trainA'
+                #         trainB = 'trainB'
+                #         testA = 'testA'
+                #         testB = 'testB'
+                #
 
-                    train_loader_a.append(get_data_loader_folder(os.path.join(conf['data_root'], trainA), batch_size, True,
-                                                            new_size_a, height, width, num_workers, True, config=conf, is_data_A=True))
-                    test_loader_a.append(get_data_loader_folder(os.path.join(conf['data_root'], testA), batch_size, False,
-                                                           new_size_a, new_size_a, new_size_a, num_workers, True, config=conf, is_data_A=True))
-                    train_loader_b.append(get_data_loader_folder(os.path.join(conf['data_root'], trainB), batch_size, True,
-                                                            new_size_b, height, width, num_workers, True, config=conf, is_data_A=False))
-                    test_loader_b.append(get_data_loader_folder(os.path.join(conf['data_root'], testB), batch_size, False,
-                                                           new_size_b, new_size_b, new_size_b, num_workers, True, config=conf, is_data_A=False))
+                train_loader_a.append(get_data_loader_folder(os.path.join(conf['data_root'],  'trainA'), batch_size, True,
+                                                             new_size_a, height, width, num_workers, True, config=conf,
+                                                             is_data_A=True, ratio_1_to_2=conf['inbalenceDataSets']['ratio_A_1_to_2']))
+                test_loader_a.append(get_data_loader_folder(os.path.join(conf['data_root'], 'testA'), batch_size, False,
+                                                            new_size_a, new_size_a, new_size_a, num_workers, True,
+                                                            config=conf, is_data_A=True, ratio_1_to_2=conf['inbalenceDataSets']['ratio_A_1_to_2']))
+                train_loader_b.append(get_data_loader_folder(os.path.join(conf['data_root'], 'trainB'), batch_size, True,
+                                                             new_size_b, height, width, num_workers, True, config=conf,
+                                                             is_data_A=False, ratio_1_to_2=conf['inbalenceDataSets']['ratio_B_1_to_2']))
+                test_loader_b.append(get_data_loader_folder(os.path.join(conf['data_root'], 'testB'), batch_size, False,
+                                                            new_size_b, new_size_b, new_size_b, num_workers, True,
+                                                            config=conf, is_data_A=False, ratio_1_to_2=conf['inbalenceDataSets']['ratio_B_1_to_2']))
             else:
                 train_loader_a.append(get_data_loader_folder(os.path.join(conf['data_root'], 'trainA'), batch_size, True,
-                                                        new_size_a, height, width, num_workers, True, config=conf, is_data_A=True))
+                                                        new_size_a, height, width, num_workers, True, config=conf,
+                                                        is_data_A=True))
                 test_loader_a.append(get_data_loader_folder(os.path.join(conf['data_root'], 'testA'), batch_size, False,
-                                                       new_size_a, new_size_a, new_size_a, num_workers, True, config=conf, is_data_A=True))
+                                                       new_size_a, new_size_a, new_size_a, num_workers, True,
+                                                       config=conf, is_data_A=True))
                 train_loader_b.append(get_data_loader_folder(os.path.join(conf['data_root'], 'trainB'), batch_size, True,
-                                                        new_size_b, height, width, num_workers, True, config=conf, is_data_A=False))
+                                                        new_size_b, height, width, num_workers, True, config=conf,
+                                                        is_data_A=False))
                 test_loader_b.append(get_data_loader_folder(os.path.join(conf['data_root'], 'testB'), batch_size, False,
-                                                       new_size_b, new_size_b, new_size_b, num_workers, True, config=conf, is_data_A=False))
+                                                       new_size_b, new_size_b, new_size_b, num_workers, True,
+                                                       config=conf, is_data_A=False))
         else:
-            train_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'trainA'), batch_size, True,
-                                                  new_size_a, height, width, num_workers, True, config=conf, is_data_A=True)
-            test_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'testA'), batch_size, False,
-                                                 new_size_a, new_size_a, new_size_a, num_workers, True, config=conf, is_data_A=True)
-            train_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'trainB'), batch_size, True,
-                                                  new_size_b, height, width, num_workers, True, config=conf, is_data_A=False)
-            test_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'testB'), batch_size, False,
-                                                 new_size_b, new_size_b, new_size_b, num_workers, True, config=conf, is_data_A=False)
+            train_loader_a.append(get_data_loader_folder(os.path.join(conf['data_root'], 'trainA'), batch_size, True,
+                                                  new_size_a, height, width, num_workers, True, config=conf, is_data_A=True))
+            test_loader_a.append(get_data_loader_folder(os.path.join(conf['data_root'], 'testA'), batch_size, False,
+                                                 new_size_a, new_size_a, new_size_a, num_workers, True, config=conf, is_data_A=True))
+            train_loader_b.append(get_data_loader_folder(os.path.join(conf['data_root'], 'trainB'), batch_size, True,
+                                                  new_size_b, height, width, num_workers, True, config=conf, is_data_A=False))
+            test_loader_b.append(get_data_loader_folder(os.path.join(conf['data_root'], 'testB'), batch_size, False,
+                                                 new_size_b, new_size_b, new_size_b, num_workers, True, config=conf, is_data_A=False))
     else:
-        train_loader_a = get_data_loader_list(conf['data_folder_train_a'], conf['data_list_train_a'], batch_size, True,
-                                                new_size_a, height, width, num_workers, True, is_data_A=True)
-        test_loader_a = get_data_loader_list(conf['data_folder_test_a'], conf['data_list_test_a'], batch_size, False,
-                                                new_size_a, new_size_a, new_size_a, num_workers, True, is_data_A=True)
-        train_loader_b = get_data_loader_list(conf['data_folder_train_b'], conf['data_list_train_b'], batch_size, True,
-                                                new_size_b, height, width, num_workers, True, is_data_A=False)
-        test_loader_b = get_data_loader_list(conf['data_folder_test_b'], conf['data_list_test_b'], batch_size, False,
-                                                new_size_b, new_size_b, new_size_b, num_workers, True, is_data_A=False)
+        train_loader_a.append(get_data_loader_list(conf['data_folder_train_a'], conf['data_list_train_a'], batch_size, True,
+                                                new_size_a, height, width, num_workers, True, is_data_A=True))
+        test_loader_a.append(get_data_loader_list(conf['data_folder_test_a'], conf['data_list_test_a'], batch_size, False,
+                                                new_size_a, new_size_a, new_size_a, num_workers, True, is_data_A=True))
+        train_loader_b.append(get_data_loader_list(conf['data_folder_train_b'], conf['data_list_train_b'], batch_size, True,
+                                                new_size_b, height, width, num_workers, True, is_data_A=False))
+        test_loader_b.append(get_data_loader_list(conf['data_folder_test_b'], conf['data_list_test_b'], batch_size, False,
+                                                new_size_b, new_size_b, new_size_b, num_workers, True, is_data_A=False))
     return train_loader_a, train_loader_b, test_loader_a, test_loader_b
 
 
@@ -124,7 +133,7 @@ def dim3to1(x):
     return x
 
 def get_data_loader_folder(input_folder, batch_size, train, new_size=None,
-                           height=256, width=256, num_workers=4, crop=True, config=None, is_data_A=None):
+                           height=256, width=256, num_workers=4, crop=True, config=None, is_data_A=None, ratio_1_to_2=None):
     transform_list = [transforms.ToTensor(),
                       transforms.Normalize((0.5, 0.5, 0.5),
                                            (0.5, 0.5, 0.5))]
@@ -183,7 +192,13 @@ def get_data_loader_folder(input_folder, batch_size, train, new_size=None,
             transform_list = [transforms.RandomPerspective(distortion_scale=0.35, p=0.5)] + transform_list if train else transform_list
 
     transform = transforms.Compose(transform_list)
-    dataset = ImageFolder(input_folder, transform=transform)
+    if ratio_1_to_2 is None:
+        dataset = ImageFolder(input_folder, transform=transform)
+    else:
+        input_folder_1 = os.path.join(input_folder, '1')
+        input_folder_2 = os.path.join(input_folder, '2')
+        dataset = ImageFolder_Double(root1=input_folder_1, root2=input_folder_2, ratio_1_to_2=ratio_1_to_2, transform=transform)
+
     loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=train, drop_last=True, num_workers=num_workers)
     return loader
 

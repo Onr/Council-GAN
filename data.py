@@ -133,7 +133,8 @@ class ImageFolder(data.Dataset):
 
 
 class ImageFolder_Double(data.Dataset):
- # TODO complete usege
+# choose the data from the subfolder acording to probability
+    # TODO complete usege
     def __init__(self, root1, root2, ratio_1_to_2, transform=None, return_paths=False,
                  loader=default_loader):
         self.ratio_1_to_2 = ratio_1_to_2
@@ -157,7 +158,8 @@ class ImageFolder_Double(data.Dataset):
         self.loader = loader
 
     def __getitem__(self, index):
-        path = self.imgs1[index] if torch.rand(1) < self.ratio_1_to_2 else  self.imgs2[index]
+        rand_res = torch.rand(1)
+        path = self.imgs1[index % len(self.imgs1)] if rand_res < self.ratio_1_to_2 else self.imgs2[index % len(self.imgs2)]
         img = self.loader(path)
         if self.transform is not None:
             img = self.transform(img)
@@ -167,4 +169,4 @@ class ImageFolder_Double(data.Dataset):
             return img
 
     def __len__(self):
-        return len(self.imgs)
+        return max(len(self.imgs1), len(self.imgs2))

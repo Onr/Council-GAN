@@ -368,6 +368,7 @@ try:
                     if config['misc']['do_telegram_report']:
                         telegram_bot_send_message('problem Occurred need attention!')
                     input(" Clear space and press enter to retry ....")
+                    print("trying to continue")
                     trainer.save(checkpoint_directory, iterations)
                 if config['misc']['do_telegram_report']:
                     telegram_bot_send_message('snapshot saved iter: ' + str(iterations))

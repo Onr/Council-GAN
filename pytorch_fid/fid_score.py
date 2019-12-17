@@ -35,11 +35,12 @@ limitations under the License.
 import os
 import pathlib
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-
+from random import shuffle, sample
 import numpy as np
 import torch
 from scipy import linalg
-from scipy.misc import imread
+# from scipy.misc import imread
+import cv2 as cv
 from torch.nn.functional import adaptive_avg_pool2d
 
 try:
@@ -107,7 +108,7 @@ def get_activations(files, model, batch_size=50, dims=2048,
         start = i * batch_size
         end = start + batch_size
 
-        images = np.array([imread(str(f)).astype(np.float32)
+        images = np.array([cv.imread(str(f)).astype(np.float32)
                            for f in files[start:end]])
 
         # Reshape to (n_images, 3, height, width)
@@ -221,11 +222,17 @@ def _compute_statistics_of_path(path, model, batch_size, dims, cuda):
         m, s = f['mu'][:], f['sigma'][:]
         f.close()
     else:
-        path = pathlib.Path(path)
-        files = list(path.glob('*.jpg')) + list(path.glob('*.png'))
+
+        # path = pathlib.Path(path) original
+        # files = list(path.glob('*.jpg')) + list(path.glob('*.png')) original
+        files = []
+        for root, dirs, files_curr in os.walk(path):
+            for file_curr in files_curr:
+                files = files + [os.path.join(root, file_curr)]
+        files = [file for file in files if '.png' in file or '.jpg' in file]
+        files = sample(files, k=len(files))
         m, s = calculate_activation_statistics(files, model, batch_size,
                                                dims, cuda)
-
     return m, s
 
 
@@ -262,6 +269,7 @@ def calculate_fid_given_paths_save_first_domain_statistic(paths, batch_size, cud
         model.cuda()
 
     if m1 is None or s1 is None:
+
         m1, s1 = _compute_statistics_of_path(paths[0], model, batch_size,
                                              dims, cuda)
     m2, s2 = _compute_statistics_of_path(paths[1], model, batch_size,
