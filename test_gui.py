@@ -107,10 +107,22 @@ else:
         decode_s.append(trainer.gen_b2a_s[i].decode)  # decode function
 
 
-# creat testing images
-num_of_images_to_test = opts.num_of_images_to_test
-seed = 1
-curr_image_num = -1
+def load_net(checkpoint):
+    try:
+        state_dict = torch.load(checkpoint)
+        if 'a2b' in checkpoint:
+            trainer.gen_a2b_s[0].load_state_dict(state_dict['a2b'])
+            encode_s[0] = trainer.gen_a2b_s[0].encode  # encode function
+            decode_s[0] = trainer.gen_a2b_s[0].decode  # decode function
+        else:
+            trainer.gen_b2a_s[0].load_state_dict(state_dict['b2a'])
+            encode_s[0] = trainer.gen_b2a_s[0].encode  # encode function
+            decode_s[0] = trainer.gen_b2a_s[0].decode  # decode function
+    except  Exception as e:
+        print(e)
+        print('FAILED to load network!')
+
+
 
 from torchvision import transforms
 from torchvision.utils import save_image
@@ -193,6 +205,12 @@ class App(QWidget):
         print('prossing image: ' + self.img_path)
         self.redraw_in_and_out()
 
+    def dropEvent_new_net(self, event):
+        self.net_path = event.mimeData().text()[7:-2]
+        load_net(self.net_path)
+        self.redraw_in_and_out()
+        self.label_net.setText(self.net_path)
+
     def random_button_pressed(self):
         self.random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
         self.random_entropy_direction = Variable(torch.randn(1, style_dim, 1, 1).cuda())
@@ -204,6 +222,7 @@ class App(QWidget):
         self.pushbutton_random_entropy.setEnabled(False)
         self.label.setEnabled(False)
         self.pushbutton_take_pic.setEnabled(False)
+        self.label_net.setEnabled(False)
         self.pushbutton_take_pic.setText('Press Esc to stop')
 
         print('press Esc to stop')
@@ -242,6 +261,8 @@ class App(QWidget):
         self.pushbutton_random_entropy.setEnabled(True)
         self.label.setEnabled(True)
         self.pushbutton_take_pic.setEnabled(True)
+        self.label_net.setEnabled(True)
+
         self.pushbutton_take_pic.setText('take a pic')
 
 
@@ -292,6 +313,10 @@ class App(QWidget):
         self.slider.sliderReleased.connect(self.sliderReleased)
         self.layout.addWidget(self.slider, Qt.AlignBottom)
 
+        self.label_net = DropLabel("drag & drop net \".pt\" file into this line")
+        self.label_net.dropEvent = self.dropEvent_new_net
+        self.label_net.setAlignment(Qt.AlignCenter)
+        self.layout.addWidget(self.label_net)
 
         self.setLayout(self.layout)
         self.initUI()
