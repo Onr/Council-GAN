@@ -370,7 +370,7 @@ class Council_Trainer(nn.Module):
             self.loss_gen_total_s.append(0)
 
             # masks should contain ones or zeros
-            if hyperparameters['iteration'] > hyperparameters['focus_loss']['focus_loss_start_at_iter']:
+            if hyperparameters['iteration'] > hyperparameters['focus_loss']['focus_loss_start_at_iter'] and (hyperparameters['mask_zero_or_one_w'] != 0 or hyperparameters['mask_total_w'] != 0 ):
 
                 if hyperparameters['mask_zero_or_one_w'] != 0:
                     if hyperparameters['do_a2b']:

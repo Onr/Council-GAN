@@ -1,6 +1,6 @@
 
 # logger options
-image_save_iter:  500         # How often do you want to save output images during training
+image_save_iter:  1000         # How often do you want to save output images during training
 image_display_iter: 100       # How often do you want to display output images during training
 display_size: 15              # How many images do you want to display each time
 snapshot_save_iter: 10000      # How often do you want to save trained models
@@ -25,7 +25,7 @@ recon_s_w: 0                  # weight of style reconstruction loss
 recon_c_w: 0                  # weight of content reconstruction loss
 recon_x_cyc_w: 0              # weight of explicit style augmented cycle consistency loss
 vgg_w: 0                      # weight of domain-invariant perceptual loss
-council_w: 13                 # weight of Council loss
+council_w: 6 # 4                 # weight of Council loss
 council_abs_w: 0              # weight of Council loss abs between images if you use this loss there should be no need to use the regular council_w as well (with this loss active there will be less or no multimodal output)
 council_abs_gray_scale: False # is set to true the council loss will use the gray scale image not the rgb one
 mask_zero_or_one_w: 0         # weight of part of the focus loss.controls how much the mask should approach binery values (zeros or ones)
@@ -34,7 +34,7 @@ focus_loss:
   mask_zero_or_one_center: 0.5
   mask_zero_or_one_epsilon: 0.01
   focus_loss_start_at_iter: 2000
-
+  do_w_loss_matching_focus: False
 
 abs_beginning_end: 0          # weight of abs loss between the input image and the generated one
 abs_beginning_end_less_by: 1  # decrees the weight abs loss by that amount
@@ -44,8 +44,43 @@ do_w_loss_matching: True      # match between the mean of the gan and the counci
 loss_matching_hist_size: 100  # the history to do avereg on so the gan loss and the council loss will match
 
 inbalenceDataSets:
-  test_inbalaced_sub_dataset: False
-  number_of_sub_dataset: 1
+  imbalance_sub_dataset: False # True # TODO chack that the folder are with subfolder and this set to false works properly
+  ratio_A_1_to_2: 0.5 # 0.x from A/1 and 1-0.x from A/2
+  ratio_B_1_to_2: 0.5 # 0.x from B/1 and 1-0.x from B/2
+
+# ────────────────────────────────────────────────
+# to use inbalenceDataSets dataset in this format:
+#   ├──datasets
+#       └──DATASET_NAME
+#           ├──testA
+#             ├──1
+#               ├──im1.png
+#               └── ...
+#             └──2
+#               ├──im2.png
+#               └── ...
+#           ├──testB
+#             ├──1
+#               ├──im3.png
+#               └── ...
+#             └──2
+#               ├──im4.png
+#               └── ...
+#           ├──trainA
+#             ├──1
+#               ├──im5.png
+#               └── ...
+#             └──2
+#               ├──im6.png
+#               └── ...
+#           └──trainB
+#             ├──1
+#               ├──im7.png
+#               └── ...
+#             └──2
+#               ├──im8.png
+#               └── ...
+# ────────────────────────────────────────────────
 
 # model options
 gen:
@@ -78,7 +113,7 @@ council:
   flipOnOff_start_with: True
   flipOnOff_On_iteration: 45
   flipOnOff_Off_iteration: 5
-  discriminetro_less_style_by: 0.71
+  discriminetro_less_style_by: 0.6 # 71
   council_start_at_iter: 1000  # start using the council loss for the specified iteration
 
 

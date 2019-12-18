@@ -89,6 +89,7 @@ def launchTensorBoard(port=6006):
     import os
     os.system('tensorboard --logdir=' + log_directory + ' --port=' + str(port) + ' > /dev/null 2>/dev/null')
     return
+
 if config['misc']['start_tensor_board']:
     port = config['misc']['start_tensor_board port']
     t_tensorBoard = threading.Thread(target=launchTensorBoard, args=([port]))  # launches TensorBoard in a diffrent thread
