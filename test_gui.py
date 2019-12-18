@@ -113,6 +113,9 @@ seed = 1
 curr_image_num = -1
 
 from torchvision import transforms
+from torchvision.utils import save_image
+
+
 def run_net_work(img_path, entropy):
     out_im_path = './tmp.png'
     in_im_path = './tmp_in.png'
@@ -120,9 +123,9 @@ def run_net_work(img_path, entropy):
     width = 128
     new_size = 128
     img = Image.open(img_path).convert('RGB')
-    transform_list = [transforms.ToTensor(),
-                      transforms.Normalize((0.5, 0.5, 0.5),
-                                           (0.5, 0.5, 0.5))]
+    transform_list = [transforms.ToTensor()]
+                      # ,transforms.Normalize((0.5, 0.5, 0.5),
+                      #                      (0.5, 0.5, 0.5))]
     transform_list = [transforms.CenterCrop((height, width))] + transform_list
     transform_list = [transforms.Resize(new_size)] + transform_list
     transform = transforms.Compose(transform_list)
@@ -130,20 +133,20 @@ def run_net_work(img_path, entropy):
     img = transform(img).unsqueeze(0).cuda()
     content, _ = encode_s[0](img)
     res_img = decode_s[0](content, entropy, img).detach().cpu().squeeze(0)
-    res_img = transforms.ToPILImage()(res_img)
-    res_img.save(out_im_path)
+    # res_img = transforms.ToPILImage()(res_img)
+    # res_img.save(out_im_path)
+    save_image(res_img, out_im_path)
 
-    in_image = transforms.ToPILImage()(img.detach().cpu().squeeze(0))
-    in_image.save(in_im_path)
+    # in_image = transforms.ToPILImage()(img.detach().cpu().squeeze(0))
+    in_image = img.detach().cpu().squeeze(0)
+    # in_image.save(in_im_path)
+    save_image(in_image, in_im_path)
     return in_im_path, out_im_path
 
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-
-
-
 
 class DropLabel(QLineEdit):
     def __init__(self, *args, **kwargs):
@@ -152,31 +155,33 @@ class DropLabel(QLineEdit):
         self.setEnabled(True)
         self.res_im = None
 
-
 class Style_Slider(QSlider):
     def __init__(self, *args, **kwargs):
         QSlider.__init__(self, *args, **kwargs)
 
-
-
 class App(QWidget):
 
+
     def redraw_in_and_out(self):
-        if self.img_path is None:
+        if self.__dict__.get('img_path') is None:
             return
-        max_added_val = 1000
+        h = 128 # 256
+        w = 128 # 256
+        max_added_val = 250
         random_entropy_direction_mult = (self.slider.value() - self.slider.maximum() / 2) / (self.slider.maximum())
         print('random_entropy +  ' + str(random_entropy_direction_mult) + ' * random_entropy_direction')
         random_entropy = self.random_entropy + max_added_val * self.random_entropy_direction * random_entropy_direction_mult
 
         self.in_im_path, self.res_im_path = run_net_work(img_path=self.img_path, entropy=random_entropy)
         self.im_out = QPixmap(self.res_im_path)
-        self.out_image_label.setPixmap(self.im_out)
+        self.out_image_label.setPixmap(self.im_out.scaled(w, h))
         self.out_image_label.repaint()
 
+
         self.im_in = QPixmap(self.in_im_path)
-        self.in_image_label.setPixmap(self.im_in)
+        self.in_image_label.setPixmap(self.im_in.scaled(w, h))
         self.in_image_label.repaint()
+
 
     def sliderReleased(self):
         # self.slider.value()
@@ -187,11 +192,57 @@ class App(QWidget):
         self.img_path = event.mimeData().text()[7:-2]
         print('prossing image: ' + self.img_path)
         self.redraw_in_and_out()
+
     def random_button_pressed(self):
         self.random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
         self.random_entropy_direction = Variable(torch.randn(1, style_dim, 1, 1).cuda())
         self.random_entropy_direction /= torch.norm(self.random_entropy_direction)
         self.redraw_in_and_out()
+
+    def take_pic_button_pressed(self):
+        self.slider.setEnabled(False)
+        self.pushbutton_random_entropy.setEnabled(False)
+        self.label.setEnabled(False)
+        self.pushbutton_take_pic.setEnabled(False)
+        self.pushbutton_take_pic.setText('Press Esc to stop')
+
+        print('press Esc to stop')
+        self.img_path = './cap_tmp_in.png'
+
+        cap = cv2.VideoCapture(0)
+        while (True):
+            # Capture frame-by-frame
+            ret, frame = cap.read()
+
+            # Our operations on the frame come here
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            # Display the resulting frame
+            cv2.imshow('frame', frame)
+            press_key = cv2.waitKey(1)
+
+            if press_key & 0xFF == ord('q') or press_key == 27:
+                break
+
+
+            cv2.imwrite(self.img_path, frame)
+            # cv2.imwrite(self.img_path, gray)
+            self.redraw_in_and_out()
+
+        # When everything done, release the capture
+        cap.release()
+        cv2.destroyAllWindows()
+
+
+
+        cv2.imwrite(self.img_path,frame)
+
+        self.redraw_in_and_out()
+        self.slider.setEnabled(True)
+        self.pushbutton_random_entropy.setEnabled(True)
+        self.label.setEnabled(True)
+        self.pushbutton_take_pic.setEnabled(True)
+        self.pushbutton_take_pic.setText('take a pic')
 
 
     def __init__(self):
@@ -199,38 +250,45 @@ class App(QWidget):
         self.title = 'Council GAN example'
         self.left = 10
         self.top = 10
-        self.width = 640
-        self.height = 480
+        self.width = 640 # 640
+        self.height = 480 # 480
         self.layout = QVBoxLayout()
+        self.hbox = QHBoxLayout()
         self.random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
         self.random_entropy_direction = Variable(torch.randn(1, style_dim, 1, 1).cuda())
         self.random_entropy_direction /= torch.norm(self.random_entropy_direction)
-        self.label = DropLabel("drag & drop image into here")
-        self.label.dropEvent = self.dropEvent
         self.res_im_path = None
 
-
-        self.in_image_label = QLabel("in")
-        self.in_image_label.setUpdatesEnabled(True)
-        self.layout.addWidget(self.in_image_label)
-
-
-        self.out_image_label = QLabel("out")
-        self.out_image_label.setUpdatesEnabled(True)
-        self.layout.addWidget(self.out_image_label)
-
-
-
+        self.label = DropLabel("drag & drop image into this line")
+        self.label.dropEvent = self.dropEvent
         self.label.setAlignment(Qt.AlignCenter)
         self.layout.addWidget(self.label)
 
-        self.pushbutton = QPushButton(text='random entropy vector and entropy vector direction')
-        self.pushbutton.pressed.connect(self.random_button_pressed)
-        self.layout.addWidget(self.pushbutton)
+        self.layout.addLayout(self.hbox)
+        self.in_image_label = QLabel("in")
+        self.in_image_label.setUpdatesEnabled(True)
+        self.hbox.addWidget(self.in_image_label)
+        self.hbox.addStretch()
+        self.layout.addStretch()
+
+        self.out_image_label = QLabel("out")
+        self.out_image_label.setUpdatesEnabled(True)
+        self.out_image_label.resize(256, 256)
+        self.hbox.addWidget(self.out_image_label)
+
+
+        self.pushbutton_take_pic = QPushButton(text='take a pic')
+        self.pushbutton_take_pic.pressed.connect(self.take_pic_button_pressed)
+        self.layout.addWidget(self.pushbutton_take_pic)
+
+
+        self.pushbutton_random_entropy = QPushButton(text='new random entropy vector & entropy vector direction')
+        self.pushbutton_random_entropy.pressed.connect(self.random_button_pressed)
+        self.layout.addWidget(self.pushbutton_random_entropy)
 
 
         self.slider = Style_Slider(orientation=Qt.Horizontal)
-        # self.slider.setAlignmen(Qt.AlignBottom)
+        self.slider.setValue(50)
         self.slider.sliderReleased.connect(self.sliderReleased)
         self.layout.addWidget(self.slider, Qt.AlignBottom)
 
