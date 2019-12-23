@@ -177,8 +177,8 @@ class App(QWidget):
     def redraw_in_and_out(self):
         if self.__dict__.get('img_path') is None:
             return
-        h = 128 # 256
-        w = 128 # 256
+        h = 256
+        w = 256
         max_added_val = 250
         random_entropy_direction_mult = (self.slider.value() - self.slider.maximum() / 2) / (self.slider.maximum())
         print('random_entropy +  ' + str(random_entropy_direction_mult) + ' * random_entropy_direction')

@@ -247,7 +247,16 @@ class Council_Trainer(nn.Module):
         return torch.sum(1 / (torch.abs(mask - center) + epsilon)) / mask.numel()
 
     def mask_small_criterion(self, mask):
+        # return self.mask_small_criterion_squer(mask)
+        return self.mask_small_criterion_squer(mask)  + self.mask_small_criterion_TV(mask) * 0.000005
+
+    def mask_small_criterion_squer(self, mask):
         return (torch.sum(mask) / mask.numel()) ** 2
+
+    def mask_small_criterion_TV(self, mask):
+        return torch.sum(torch.abs(mask[:,:,1:,:]-mask[:,:,:-1,:])) + \
+               torch.sum(torch.abs(mask[:, :, :, 1:] - mask[:, :, :, :-1]))
+
 
     def forward(self, x_a, x_b=None, s_a=None, s_b=None):
         self.eval()
