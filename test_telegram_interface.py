@@ -79,6 +79,13 @@ is_data_A = not opts.b2a
 
 
 style_dim = config['gen']['style_dim']
+if opts.b2a:
+    config['do_b2a'] = True
+    config['do_a2b'] = False
+else:
+    config['do_b2a'] = False
+    config['do_a2b'] = True
+
 trainer = Council_Trainer(config)
 only_one = False
 if 'gen_' in opts.checkpoint[-21:]:
@@ -135,18 +142,27 @@ def load_net(checkpoint):
 
 from torchvision import transforms
 from torchvision.utils import save_image
+import time
+telegram_res_path = './telegram_tmp'
+telegram_res_path = os.path.join(telegram_res_path, time.ctime(time.time()))
+
+if not os.path.exists(telegram_res_path):
+    os.mkdir(telegram_res_path)
+
 
 
 def run_net_work(img_path, entropy):
-    out_im_path = './tmp.png'
-    in_im_path = './tmp_in.png'
+    run_net_work.counter += 1
+    out_im_path = os.path.join(telegram_res_path, 'tmp_' + str(run_net_work.counter) + '.png')
+    in_im_path = os.path.join(telegram_res_path, 'tmp_' + str(run_net_work.counter) + '_in.png')
     height = 128
     width = 128
     new_size = 128
     img = Image.open(img_path).convert('RGB')
-    transform_list = [transforms.ToTensor()]
-                      # ,transforms.Normalize((0.5, 0.5, 0.5),
-                      #                      (0.5, 0.5, 0.5))]
+    mean = torch.tensor([0.5, 0.5, 0.5])
+    std = torch.tensor([0.5, 0.5, 0.5])
+    transform_list = [transforms.ToTensor()
+                      ,transforms.Normalize(mean=mean, std=std)]
     transform_list = [transforms.CenterCrop((height, width))] + transform_list
     transform_list = [transforms.Resize(new_size)] + transform_list
     transform = transforms.Compose(transform_list)
@@ -156,17 +172,19 @@ def run_net_work(img_path, entropy):
     res_img = decode_s[0](content, entropy, img).detach().cpu().squeeze(0)
     # res_img = transforms.ToPILImage()(res_img)
     # res_img.save(out_im_path)
+
+    res_img = transforms.Normalize(mean=(-mean/std), std=(1.0/std))(res_img)
     save_image(res_img, out_im_path)
 
     # in_image = transforms.ToPILImage()(img.detach().cpu().squeeze(0))
     in_image = img.detach().cpu().squeeze(0)
     # in_image.save(in_im_path)
+
+    in_image = transforms.Normalize(mean=-mean/std, std=1/std)(in_image)
     save_image(in_image, in_im_path)
     return in_im_path, out_im_path
 
-
-
-
+run_net_work.counter = 0
 
 
 
@@ -227,21 +245,28 @@ def telegram_command(update, context):
     #         telegram_bot_send_message(tmp_conf.read())
     # for photo in update.message['photo']:
     #     print(photo['file_id'])
+    context.bot.send_message(chat_id=update.message.chat_id, text='Prossesing')
+    try:
+        photo_id = update.message['photo'][0]['file_id']
+        im_url = context.bot.getFile(photo_id)['file_path']
+        import urllib.request
+        telegram_image_save_path = os.path.join(telegram_res_path, "telegram_recived.jpg")
+        urllib.request.urlretrieve(im_url, telegram_image_save_path)
 
-    photo_id = update.message['photo'][0]['file_id']
-    im_url = context.bot.getFile(photo_id)['file_path']
-    import urllib.request
-    telegram_image_save_path = "./telegram_recived.jpg"
-    urllib.request.urlretrieve(im_url, telegram_image_save_path)
+        random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
+        run_net_work(telegram_image_save_path, random_entropy)
 
-    random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
-    run_net_work(telegram_image_save_path, random_entropy)
-    out_image_path ='./tmp.png'
-    with open(out_image_path, 'rb') as res_file:
-        context.bot.send_photo(update.message.chat_id, photo=res_file, filename=config['misc']['telegram_report_add_prefix'])
+        in_image_path = os.path.join(telegram_res_path, 'tmp_' + str(run_net_work.counter) + '_in.png')
+        with open(in_image_path, 'rb') as in_file:
+            context.bot.send_photo(chat_id=update.message.chat_id, photo=in_file, filename=config['misc']['telegram_report_add_prefix'], caption='input')
 
-    # context.bot.sendMessage(update.message.chat_id, text='enter chat_id in to: ' + confidential_yaml_file_path + ' as:')
+        out_image_path = os.path.join(telegram_res_path, 'tmp_' + str(run_net_work.counter) + '.png')
+        with open(out_image_path, 'rb') as res_file:
+            context.bot.send_photo(chat_id=update.message.chat_id, photo=res_file, filename=config['misc']['telegram_report_add_prefix'], caption='output')
 
+        # context.bot.sendMessage(update.message.chat_id, text='enter chat_id in to: ' + confidential_yaml_file_path + ' as:')
+    except:
+        context.bot.send_message(chat_id=update.message.chat_id, text='Failed')
 
 
 
@@ -253,8 +278,9 @@ updater.start_polling()
 
 
 input(colored('telegram bot running - press enter to stop', color='yellow', attrs=['underline', 'bold', 'blink', 'reverse']))
+print(colored('stoping...', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
 updater.stop()
-
+print(colored('stoped', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
 
 
 
