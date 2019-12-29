@@ -231,8 +231,11 @@ def __write_images(image_outputs, display_image_num, file_name):
 
 def write_2images(image_outputs, display_image_num, image_directory, postfix, do_a2b=True, do_b2a=True):
     n = len(image_outputs)
-    gen_a2b_im = __write_images(image_outputs[0:n//2], display_image_num, '%s/gen_a2b_%s.jpg' % (image_directory, postfix)) if do_a2b else None
-    gen_b2a_im = __write_images(image_outputs[n//2:n], display_image_num, '%s/gen_b2a_%s.jpg' % (image_directory, postfix)) if do_b2a else None
+    gen_a2b_im, gen_b2a_im = [], []
+    if do_a2b:
+        gen_a2b_im = __write_images(image_outputs[0:n//2], display_image_num, '%s/gen_a2b_%s.jpg' % (image_directory, postfix)) if do_a2b else None
+    if do_b2a:
+        gen_b2a_im = __write_images(image_outputs[n//2:n], display_image_num, '%s/gen_b2a_%s.jpg' % (image_directory, postfix)) if do_b2a else None
 
     return gen_a2b_im, gen_b2a_im
 

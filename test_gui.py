@@ -25,8 +25,13 @@ import torch.utils.data as data
 import os.path
 import torch
 import cv2
-
 from PIL import Image
+import time
+from tkinter import Tk
+from tkinter.filedialog import asksaveasfilename
+import os
+import shutil
+from utils import write_2images
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='configs/edges2handbags_folder', help='Path to the config file.')
@@ -47,9 +52,6 @@ opts = parser.parse_args()
 
 import sys
 
-
-
-
 torch.manual_seed(opts.seed)
 torch.cuda.manual_seed(opts.seed)
 
@@ -58,22 +60,16 @@ config = get_config(opts.config)
 input_dim = config['input_dim_a'] if not opts.b2a else config['input_dim_b']
 council_size = config['council']['council_size']
 
-
 # Setup model and data loader
-# image_names = ImageFolder(opts.input_folder, transform=None, return_paths=True)
 if not 'new_size_a' in config.keys():
     config['new_size_a'] = config['new_size']
 is_data_A = not opts.b2a
-# data_loader = get_data_loader_folder(opts.input_folder, 1, False,\
-#                                      new_size=config['new_size_a'] if 'new_size_a' in config.keys() else config['new_size'],\
-#                                      crop=False, config=config, is_data_A=is_data_A)
-
 
 style_dim = config['gen']['style_dim']
 trainer = Council_Trainer(config)
 only_one = False
 if 'gen_' in opts.checkpoint[-21:]:
-    state_dict = torch.load(opts.checkpoint)
+    state_dict = torch.load(opts.checkpoint, map_location={'cuda:1':'cuda:0'})
     if not opts.b2a:
         trainer.gen_a2b_s[0].load_state_dict(state_dict['a2b'])
     else:
@@ -84,13 +80,12 @@ else:
     for i in range(council_size):
         if not opts.b2a:
             tmp_checkpoint = opts.checkpoint[:-8] + 'a2b_gen_' + str(i) + '_' + opts.checkpoint[-8:] + '.pt'
-            state_dict = torch.load(tmp_checkpoint)
+            state_dict = torch.load(tmp_checkpoint, map_location={'cuda:1':'cuda:0'})
             trainer.gen_a2b_s[i].load_state_dict(state_dict['a2b'])
         else:
             tmp_checkpoint = opts.checkpoint[:-8] + 'b2a_gen_' + str(i) + '_' + opts.checkpoint[-8:] + '.pt'
-            state_dict = torch.load(tmp_checkpoint)
+            state_dict = torch.load(tmp_checkpoint, map_location={'cuda:1':'cuda:0'})
             trainer.gen_b2a_s[i].load_state_dict(state_dict['b2a'])
-
 
 trainer.cuda()
 trainer.eval()
@@ -106,10 +101,9 @@ else:
         encode_s.append(trainer.gen_b2a_s[i].encode)  # encode function
         decode_s.append(trainer.gen_b2a_s[i].decode)  # decode function
 
-
 def load_net(checkpoint):
     try:
-        state_dict = torch.load(checkpoint)
+        state_dict = torch.load(checkpoint, map_location={'cuda:1':'cuda:0'})
         if 'a2b' in checkpoint:
             trainer.gen_a2b_s[0].load_state_dict(state_dict['a2b'])
             encode_s[0] = trainer.gen_a2b_s[0].encode  # encode function
@@ -122,39 +116,43 @@ def load_net(checkpoint):
         print(e)
         print('FAILED to load network!')
 
-
-
 from torchvision import transforms
 from torchvision.utils import save_image
 
 
 def run_net_work(img_path, entropy):
-    out_im_path = './tmp.png'
-    in_im_path = './tmp_in.png'
+    out_im_path = './tmp.jpg'
+    in_im_path = './tmp_in.jpg'
     height = 128
     width = 128
     new_size = 128
-    img = Image.open(img_path).convert('RGB')
+    img = Image.open(img_path)
     transform_list = [transforms.ToTensor()]
-                      # ,transforms.Normalize((0.5, 0.5, 0.5),
-                      #                      (0.5, 0.5, 0.5))]
+
+    mean = torch.tensor([0.5, 0.5, 0.5], dtype=torch.float32)
+    std = torch.tensor([0.5, 0.5, 0.5], dtype=torch.float32)
+    transform_list = [transforms.ToTensor(), transforms.Normalize(mean=mean.tolist(), std=std.tolist())]
+
     transform_list = [transforms.CenterCrop((height, width))] + transform_list
     transform_list = [transforms.Resize(new_size)] + transform_list
     transform = transforms.Compose(transform_list)
 
+
+
     img = transform(img).unsqueeze(0).cuda()
     content, _ = encode_s[0](img)
     res_img = decode_s[0](content, entropy, img).detach().cpu().squeeze(0)
-    # res_img = transforms.ToPILImage()(res_img)
-    # res_img.save(out_im_path)
+
+
+    res_img=transforms.Normalize(mean=(-1 * mean / std).tolist(), std=(1.0/std).tolist())(res_img)
+
     save_image(res_img, out_im_path)
 
-    # in_image = transforms.ToPILImage()(img.detach().cpu().squeeze(0))
     in_image = img.detach().cpu().squeeze(0)
-    # in_image.save(in_im_path)
+    in_image=transforms.Normalize(mean=(-1 * mean / std).tolist(), std=(1.0/std).tolist())(in_image)
+
     save_image(in_image, in_im_path)
     return in_im_path, out_im_path
-
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -173,7 +171,6 @@ class Style_Slider(QSlider):
 
 class App(QWidget):
 
-
     def redraw_in_and_out(self):
         if self.__dict__.get('img_path') is None:
             return
@@ -181,19 +178,16 @@ class App(QWidget):
         w = 256
         max_added_val = 250
         random_entropy_direction_mult = (self.slider.value() - self.slider.maximum() / 2) / (self.slider.maximum())
-        print('random_entropy +  ' + str(random_entropy_direction_mult) + ' * random_entropy_direction')
+        # print('random_entropy +  ' + str(random_entropy_direction_mult) + ' * random_entropy_direction')
         random_entropy = self.random_entropy + max_added_val * self.random_entropy_direction * random_entropy_direction_mult
 
         self.in_im_path, self.res_im_path = run_net_work(img_path=self.img_path, entropy=random_entropy)
         self.im_out = QPixmap(self.res_im_path)
         self.out_image_label.setPixmap(self.im_out.scaled(w, h))
         self.out_image_label.repaint()
-
-
         self.im_in = QPixmap(self.in_im_path)
         self.in_image_label.setPixmap(self.im_in.scaled(w, h))
         self.in_image_label.repaint()
-
 
     def sliderReleased(self):
         # self.slider.value()
@@ -218,11 +212,11 @@ class App(QWidget):
         self.redraw_in_and_out()
 
     def take_pic_button_pressed(self):
-        self.slider.setEnabled(False)
-        self.pushbutton_random_entropy.setEnabled(False)
-        self.label.setEnabled(False)
+        # self.slider.setEnabled(False)
+        # self.pushbutton_random_entropy.setEnabled(False)
+        # self.label.setEnabled(False)
         self.pushbutton_take_pic.setEnabled(False)
-        self.label_net.setEnabled(False)
+        # self.label_net.setEnabled(False)
         self.pushbutton_take_pic.setText('Press Esc to stop')
 
         print('press Esc to stop')
@@ -230,32 +224,31 @@ class App(QWidget):
 
         cap = cv2.VideoCapture(0)
         while (True):
+            start_time = time.time()
             # Capture frame-by-frame
             ret, frame = cap.read()
 
-            # Our operations on the frame come here
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # operations on the frame
+            # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
             # Display the resulting frame
-            cv2.imshow('frame', frame)
+            cv2.imshow('press ENTER to stop', frame)
             press_key = cv2.waitKey(1)
 
-            if press_key & 0xFF == ord('q') or press_key == 27:
+            if press_key & 0xFF == ord('q') or press_key == 27 or press_key == 13:
                 break
 
+            stop_time= time.time()
+            duration = stop_time - start_time
+            # print('Hz: ' + str(1/duration))
 
             cv2.imwrite(self.img_path, frame)
-            # cv2.imwrite(self.img_path, gray)
             self.redraw_in_and_out()
 
         # When everything done, release the capture
         cap.release()
         cv2.destroyAllWindows()
-
-
-
         cv2.imwrite(self.img_path,frame)
-
         self.redraw_in_and_out()
         self.slider.setEnabled(True)
         self.pushbutton_random_entropy.setEnabled(True)
@@ -263,7 +256,19 @@ class App(QWidget):
         self.pushbutton_take_pic.setEnabled(True)
         self.label_net.setEnabled(True)
 
-        self.pushbutton_take_pic.setText('take a pic')
+        cv2.imwrite(self.img_path, frame)
+        self.pushbutton_take_pic.setText('live webcam view')
+
+    def save_image_pressed(self):
+        Tk().withdraw()
+        savepath = asksaveasfilename( defaultextension=".png")
+        if savepath is None:
+            return
+        print('saving image to: ' + savepath)
+        shutil.copyfile(self.in_im_path, savepath[:-4] + '_in' + savepath[-4:])
+        shutil.copyfile(self.res_im_path, savepath[:-4] + '_out' + savepath[-4:])
+
+
 
 
     def __init__(self):
@@ -271,19 +276,14 @@ class App(QWidget):
         self.title = 'Council GAN example'
         self.left = 10
         self.top = 10
-        self.width = 640 # 640
-        self.height = 480 # 480
+        self.width = 640  # 640
+        self.height = 480  # 480
         self.layout = QVBoxLayout()
         self.hbox = QHBoxLayout()
         self.random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
         self.random_entropy_direction = Variable(torch.randn(1, style_dim, 1, 1).cuda())
         self.random_entropy_direction /= torch.norm(self.random_entropy_direction)
         self.res_im_path = None
-
-        self.label = DropLabel("drag & drop image into this line")
-        self.label.dropEvent = self.dropEvent
-        self.label.setAlignment(Qt.AlignCenter)
-        self.layout.addWidget(self.label)
 
         self.layout.addLayout(self.hbox)
         self.in_image_label = QLabel("in")
@@ -297,11 +297,14 @@ class App(QWidget):
         self.out_image_label.resize(256, 256)
         self.hbox.addWidget(self.out_image_label)
 
+        self.label = DropLabel("drag & drop image into this line")
+        self.label.dropEvent = self.dropEvent
+        self.label.setAlignment(Qt.AlignCenter)
+        self.layout.addWidget(self.label)
 
-        self.pushbutton_take_pic = QPushButton(text='take a pic')
+        self.pushbutton_take_pic = QPushButton(text='live webcam view')
         self.pushbutton_take_pic.pressed.connect(self.take_pic_button_pressed)
         self.layout.addWidget(self.pushbutton_take_pic)
-
 
         self.pushbutton_random_entropy = QPushButton(text='new random entropy vector & entropy vector direction')
         self.pushbutton_random_entropy.pressed.connect(self.random_button_pressed)
@@ -311,6 +314,7 @@ class App(QWidget):
         self.slider = Style_Slider(orientation=Qt.Horizontal)
         self.slider.setValue(50)
         self.slider.sliderReleased.connect(self.sliderReleased)
+        self.slider.valueChanged.connect(self.sliderReleased)
         self.layout.addWidget(self.slider, Qt.AlignBottom)
 
         self.label_net = DropLabel("drag & drop net \".pt\" file into this line")
@@ -318,21 +322,18 @@ class App(QWidget):
         self.label_net.setAlignment(Qt.AlignCenter)
         self.layout.addWidget(self.label_net)
 
+
+        self.save_image = QPushButton(text='save image')
+        self.save_image.pressed.connect(self.save_image_pressed)
+        self.layout.addWidget(self.save_image)
+
         self.setLayout(self.layout)
         self.initUI()
-
 
     def initUI(self):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
         self.show()
-
-    # def dropEvent(self, e):
-    #     print(e.mimeData().text())
-    #     self.setText(e.mimeData().text())
-
-
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
