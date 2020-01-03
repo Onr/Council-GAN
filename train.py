@@ -35,7 +35,6 @@ from tqdm import tqdm
 import time
 from termcolor import colored
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='configs/glasses_folder.yaml', help='Path to the config file.')
 parser.add_argument('--output_path', type=str, default='.outputs', help="outputs path")

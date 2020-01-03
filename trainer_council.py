@@ -411,11 +411,16 @@ class Council_Trainer(nn.Module):
                             self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i]
 
                 # masks should as small as possible to leave original domain with little changes
+                if hyperparameters['do_a2b']:
+                    self.loss_gen_mask_total_ab_s.append(0)
+                if hyperparameters['do_b2a']:
+                    self.loss_gen_mask_total_ba_s.append(0)
+
                 if hyperparameters['mask_total_w'] != 0:
                     if hyperparameters['do_a2b']:
-                        self.loss_gen_mask_total_ab_s.append(self.mask_small_criterion(mask_ab_s[i]))
+                        self.loss_gen_mask_total_ab_s[i] += self.mask_small_criterion(mask_ab_s[i])
                     if hyperparameters['do_b2a']:
-                        self.loss_gen_mask_total_ba_s.append(self.mask_small_criterion(mask_ba_s[i]))
+                        self.loss_gen_mask_total_ba_s[i] += self.mask_small_criterion(mask_ba_s[i])
 
                 if self.do_w_loss_matching_focus:
                     print('===== 3 =====')
