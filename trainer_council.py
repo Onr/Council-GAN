@@ -54,6 +54,7 @@ class Council_Trainer(nn.Module):
         self.mask_zero_or_one_center_conf = hyperparameters['focus_loss']['mask_zero_or_one_center']
         self.mask_zero_or_one_epsilon_conf = hyperparameters['focus_loss']['mask_zero_or_one_epsilon']
         self.mask_total_w_conf = hyperparameters['mask_total_w']
+        self.mask_tv_w_conf = hyperparameters['mask_tv_w']
         self.batch_size_conf = hyperparameters['batch_size']
         self.do_w_loss_matching = hyperparameters['do_w_loss_matching']
         self.do_w_loss_matching_focus = hyperparameters['focus_loss']['do_w_loss_matching_focus']
@@ -248,14 +249,17 @@ class Council_Trainer(nn.Module):
 
     def mask_small_criterion(self, mask):
         # return self.mask_small_criterion_squer(mask)
-        return self.mask_small_criterion_squer(mask) + self.mask_small_criterion_TV(mask) * 0.000001  # 0.000005
+        return self.mask_small_criterion_squer(mask)
 
     def mask_small_criterion_squer(self, mask):
         return (torch.sum(mask) / mask.numel()) ** 2
 
-    def mask_small_criterion_TV(self, mask):
+    def mask_small_criterion_abs(self, mask):
+        return torch.abs((torch.sum(mask) / mask.numel()))
+
+    def mask_criterion_TV(self, mask):
         return torch.sum(torch.abs(mask[:,:,1:,:]-mask[:,:,:-1,:])) + \
-               torch.sum(torch.abs(mask[:, :, :, 1:] - mask[:, :, :, :-1]))
+               torch.sum(torch.abs(mask[:, :, :, 1:] - mask[:, :, :, :-1])) / mask.numel()
 
 
     def forward(self, x_a, x_b=None, s_a=None, s_b=None):
@@ -309,6 +313,8 @@ class Council_Trainer(nn.Module):
         self.loss_gen_mask_zero_one_ab_s = []
         self.loss_gen_mask_total_ba_s = []
         self.loss_gen_mask_total_ab_s = []
+        self.loss_gen_mask_TV_ab_s = []
+        self.loss_gen_mask_TV_ba_s = []
         self.loss_gen_recon_x_a_s = []
         self.loss_gen_recon_x_b_s = []
         self.loss_gen_recon_s_a_s = []
@@ -410,6 +416,8 @@ class Council_Trainer(nn.Module):
                         if hyperparameters['do_b2a']:
                             self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i]
 
+
+
                 # masks should as small as possible to leave original domain with little changes
                 if hyperparameters['do_a2b']:
                     self.loss_gen_mask_total_ab_s.append(0)
@@ -421,6 +429,20 @@ class Council_Trainer(nn.Module):
                         self.loss_gen_mask_total_ab_s[i] += self.mask_small_criterion(mask_ab_s[i])
                     if hyperparameters['do_b2a']:
                         self.loss_gen_mask_total_ba_s[i] += self.mask_small_criterion(mask_ba_s[i])
+
+                # TV loss on the mask
+                if hyperparameters['do_a2b']:
+                    self.loss_gen_mask_TV_ab_s.append(0)
+                if hyperparameters['do_b2a']:
+                    self.loss_gen_mask_TV_ba_s.append(0)
+                if hyperparameters['mask_tv_w'] != 0:
+                    if hyperparameters['do_a2b']:
+                        self.loss_gen_mask_TV_ab_s[i] += self.mask_criterion_TV(mask_ab_s[i])
+                        self.loss_gen_total_s[i] += hyperparameters['mask_tv_w'] * self.loss_gen_mask_TV_ab_s[i]
+                    if hyperparameters['do_b2a']:
+                        self.loss_gen_mask_TV_ba_s[i] += self.mask_criterion_TV(mask_ba_s[i])
+                        self.loss_gen_total_s[i] += hyperparameters['mask_tv_w'] * self.loss_gen_mask_TV_ba_s[i]
+
 
                 if self.do_w_loss_matching_focus:
                     print('===== 3 =====')
