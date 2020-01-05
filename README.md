@@ -4,7 +4,7 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
 [Ori Nizan](https://onr.github.io/) , [Ayellet Tal](http://webee.technion.ac.il/~ayellet/),
 **[Breaking the Cycle - Colleagues are all you need](https://arxiv.org/abs/1911.10538 "Breaking the cycle -- Colleagues are all you need")**
 
-![gan_council_teaser](/images/paper_teaser.png)
+![gan_council_teaser](/images/paper_teaser)
 
 ![gan_council_overview](/images/gan_council_overview.png)
 
