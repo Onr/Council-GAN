@@ -10,6 +10,9 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
 
 ![glasses_gif](/images/glasses_gif.gif)
 
+![male2female_gif](/images/m2f_gif.gif)
+
+
 ## Usage
 
 ### Downloading the dataset
