@@ -8,6 +8,8 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
 
 ![gan_council_overview](/images/gan_council_overview.png)
 
+![glasses_gif](/images/glasses_gif.gif)
+
 ## Usage
 
 ### Downloading the dataset
