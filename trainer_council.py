@@ -383,6 +383,12 @@ class Council_Trainer(nn.Module):
                         self.gen_a2b.decode(c_b_recon_s[i], s_b_prime_s[i], x_b) if hyperparameters['recon_x_cyc_w'] > 0 else None)
 
             self.loss_gen_total_s.append(0)
+            if hyperparameters['do_a2b']:
+                self.loss_gen_mask_TV_ab_s.append(0)
+                self.loss_gen_mask_total_ab_s.append(0)
+            if hyperparameters['do_b2a']:
+                self.loss_gen_mask_TV_ba_s.append(0)
+                self.loss_gen_mask_total_ba_s.append(0)
 
             # masks should contain ones or zeros
             if hyperparameters['iteration'] > hyperparameters['focus_loss']['focus_loss_start_at_iter'] and (hyperparameters['mask_zero_or_one_w'] != 0 or hyperparameters['mask_total_w'] != 0 ):
@@ -416,14 +422,7 @@ class Council_Trainer(nn.Module):
                         if hyperparameters['do_b2a']:
                             self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i]
 
-
-
                 # masks should as small as possible to leave original domain with little changes
-                if hyperparameters['do_a2b']:
-                    self.loss_gen_mask_total_ab_s.append(0)
-                if hyperparameters['do_b2a']:
-                    self.loss_gen_mask_total_ba_s.append(0)
-
                 if hyperparameters['mask_total_w'] != 0:
                     if hyperparameters['do_a2b']:
                         self.loss_gen_mask_total_ab_s[i] += self.mask_small_criterion(mask_ab_s[i])
@@ -431,10 +430,7 @@ class Council_Trainer(nn.Module):
                         self.loss_gen_mask_total_ba_s[i] += self.mask_small_criterion(mask_ba_s[i])
 
                 # TV loss on the mask
-                if hyperparameters['do_a2b']:
-                    self.loss_gen_mask_TV_ab_s.append(0)
-                if hyperparameters['do_b2a']:
-                    self.loss_gen_mask_TV_ba_s.append(0)
+
                 if hyperparameters['mask_tv_w'] != 0:
                     if hyperparameters['do_a2b']:
                         self.loss_gen_mask_TV_ab_s[i] += self.mask_criterion_TV(mask_ab_s[i])

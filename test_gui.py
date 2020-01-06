@@ -33,6 +33,14 @@ import os
 import shutil
 from utils import write_2images
 
+use_face_locations = True
+# use_face_locations = False
+
+if use_face_locations:
+    from PIL import Image
+    import face_recognition
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='configs/edges2handbags_folder', help='Path to the config file.')
 parser.add_argument('--input_folder', type=str, help="input image folder")
@@ -49,6 +57,31 @@ parser.add_argument('--num_of_images_to_test', type=int, default=10000, help="nu
 data_name = 'out'
 
 opts = parser.parse_args()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import sys
 
@@ -116,42 +149,200 @@ def load_net(checkpoint):
         print(e)
         print('FAILED to load network!')
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+from threading import Thread, Lock
+
+class WebcamVideoStream :
+    def __init__(self, src=0, width=640, height=480) :
+        self.stream = cv2.VideoCapture(src)
+        self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        (self.grabbed, self.frame) = self.stream.read()
+        self.started = False
+        self.read_lock = Lock()
+
+    def start(self) :
+        if self.started :
+            print ("already started!!")
+            return None
+        self.started = True
+        self.thread = Thread(target=self.update, args=())
+        self.thread.start()
+        return self
+
+    def update(self) :
+        while self.started :
+            (grabbed, frame) = self.stream.read()
+            self.read_lock.acquire()
+            self.grabbed, self.frame = grabbed, frame
+            self.read_lock.release()
+
+    def read(self) :
+        self.read_lock.acquire()
+        frame = self.frame.copy()
+        self.read_lock.release()
+        return frame
+
+    def stop(self) :
+        self.started = False
+        self.thread.join()
+
+    def __exit__(self, exc_type, exc_value, traceback) :
+        self.stream.release()
+
+
+
+
+
+
+
+
+
+
+
+
+
 from torchvision import transforms
 from torchvision.utils import save_image
 
 
-def run_net_work(img_path, entropy):
+def run_net_work(img_path, entropy, use_face_locations=False):
     out_im_path = './tmp.jpg'
     in_im_path = './tmp_in.jpg'
-    height = 128
-    width = 128
-    new_size = 128
-    img = Image.open(img_path)
-    transform_list = [transforms.ToTensor()]
+    net_hight = 128
+    net_width = 128
+    net_new_size = 128
+
+
+
+
+
+
+    # transform_list = [transforms.ToTensor()]
 
     mean = torch.tensor([0.5, 0.5, 0.5], dtype=torch.float32)
     std = torch.tensor([0.5, 0.5, 0.5], dtype=torch.float32)
     transform_list = [transforms.ToTensor(), transforms.Normalize(mean=mean.tolist(), std=std.tolist())]
 
-    transform_list = [transforms.CenterCrop((height, width))] + transform_list
-    transform_list = [transforms.Resize(new_size)] + transform_list
+    transform_list = [transforms.CenterCrop((net_hight, net_width))] + transform_list
+    transform_list = [transforms.Resize(net_new_size)] + transform_list
     transform = transforms.Compose(transform_list)
 
 
 
-    img = transform(img).unsqueeze(0).cuda()
-    content, _ = encode_s[0](img)
-    res_img = decode_s[0](content, entropy, img).detach().cpu().squeeze(0)
 
 
-    res_img=transforms.Normalize(mean=(-1 * mean / std).tolist(), std=(1.0/std).tolist())(res_img)
 
-    save_image(res_img, out_im_path)
+    # Find all the faces in the image using the default HOG-based model.
+    # This method is fairly accurate, but not as accurate as the CNN model and not GPU accelerated.
+    # See also: find_faces_in_picture_cnn.py
+    if use_face_locations:
+        img = face_recognition.load_image_file(img_path)
+        face_locations = face_recognition.face_locations(img=img, number_of_times_to_upsample=0)
+        img_h = img.shape[0]
+        img_w = img.shape[1]
+        final_res_img = transforms.ToTensor()(img)
+        in_img = transforms.ToTensor()(img)
+    else:
+        img = Image.open(img_path)
+        img = np.array(img)
+        face_locations = [[0, img.shape[1], img.shape[0], 0]]
+        img_h = img.shape[0]
+        img_w = img.shape[1]
+        final_res_img = transforms.ToTensor()(img)
+        in_img = transforms.ToTensor()(img)
 
-    in_image = img.detach().cpu().squeeze(0)
-    in_image=transforms.Normalize(mean=(-1 * mean / std).tolist(), std=(1.0/std).tolist())(in_image)
+    for face_location in face_locations:
+        top, right, bottom, left = face_location
 
-    save_image(in_image, in_im_path)
+        hight = bottom - top
+        width = right - left
+        if use_face_locations:
+
+            # making the image larger because face_recognition  cuts the faces
+            # increes_by = int(max(hight, width) / 1.5)
+            increes_by = int(max(hight, width) / 1.7)
+            # increes_by = int(max(hight, width) / 4)
+            # increes_by = 0
+
+
+
+            if hight + increes_by > img_h or width + increes_by > img_w:
+                # increes_by is too big
+                increes_by = 0
+            top, right, bottom, left = top - increes_by, right + increes_by, bottom + increes_by, left - increes_by
+            hight = bottom - top
+            width = right - left
+
+            if top < 0:
+                top = 0
+                bottom = hight if hight < img_h else img_h-1
+            if bottom >= img_h:
+                bottom = img_h - 1
+                top = bottom - hight if bottom - hight >= 0 else 0
+            if left < 0:
+                left = 0
+                right = width if width < img_w else img_w - 1
+            if right >= img_w:
+                right = img_w - 1
+                left = right - width if right - width >= 0 else 0
+
+
+
+            #make squer
+            bottom = top + min(hight, width, img_h, img_w)
+            right = left + min(hight, width, img_h, img_w)
+
+            hight = bottom - top
+            width = right - left
+
+
+        curr_face_image = img[top:bottom, left:right]
+        curr_face_image = transform(Image.fromarray(curr_face_image)).unsqueeze(0).cuda()
+
+        content, _ = encode_s[0](curr_face_image)
+        res_img = decode_s[0](content, entropy, curr_face_image).detach().cpu().squeeze(0)
+        res_img = transforms.Normalize(mean=(-1 * mean / std).tolist(), std=(1.0 / std).tolist())(res_img)
+
+        # resize the network output to fit the original image
+        transforms_size_prossesing = [transforms.ToPILImage(), transforms.Resize(size=(hight, width)), transforms.ToTensor()]
+        transforms_size_prossesing = transforms.Compose(transforms_size_prossesing)
+
+        final_res_img[:, top:bottom, left:right] = transforms_size_prossesing(res_img)
+        curr_face_image = curr_face_image.cpu().squeeze(0)
+        curr_face_image = transforms.Normalize(mean=(-1 * mean / std).tolist(), std=(1.0 / std).tolist())(curr_face_image)
+        in_img[:, top:bottom, left:right] = transforms_size_prossesing(curr_face_image.cpu().squeeze(0))
+
+    save_image(final_res_img, out_im_path)
+    # img = transforms.ToTensor()(img)
+    save_image(in_img, in_im_path)
+
+    # img = Image.open(img_path)
+    # img = transform(img).unsqueeze(0).cuda()
+    # content, _ = encode_s[0](img)
+    # res_img = decode_s[0](content, entropy, img).detach().cpu().squeeze(0)
+
+
+    # res_img=transforms.Normalize(mean=(-1 * mean / std).tolist(), std=(1.0/std).tolist())(res_img)
+
+    # save_image(res_img, out_im_path)
+    # in_image = img.detach().cpu().squeeze(0)
+    # in_image=transforms.Normalize(mean=(-1 * mean / std).tolist(), std=(1.0/std).tolist())(in_image)
+    # save_image(in_image, in_im_path)
+
+
     return in_im_path, out_im_path
 
 from PyQt5.QtGui import *
@@ -181,7 +372,7 @@ class App(QWidget):
         # print('random_entropy +  ' + str(random_entropy_direction_mult) + ' * random_entropy_direction')
         random_entropy = self.random_entropy + max_added_val * self.random_entropy_direction * random_entropy_direction_mult
 
-        self.in_im_path, self.res_im_path = run_net_work(img_path=self.img_path, entropy=random_entropy)
+        self.in_im_path, self.res_im_path = run_net_work(img_path=self.img_path, entropy=random_entropy, use_face_locations=self.use_face_locations)
         self.im_out = QPixmap(self.res_im_path)
         self.out_image_label.setPixmap(self.im_out.scaled(w, h))
         self.out_image_label.repaint()
@@ -215,18 +406,26 @@ class App(QWidget):
         # self.slider.setEnabled(False)
         # self.pushbutton_random_entropy.setEnabled(False)
         # self.label.setEnabled(False)
-        self.pushbutton_take_pic.setEnabled(False)
+        if self.live_view_on:
+            self.live_view_on = False
+            return
+        # self.pushbutton_take_pic.setEnabled(False)
+        # self.cb_ft.setEnabled(False)
         # self.label_net.setEnabled(False)
-        self.pushbutton_take_pic.setText('Press Esc to stop')
+        self.pushbutton_take_pic.setText('Press Here to Stop')
 
         print('press Esc to stop')
         self.img_path = './cap_tmp_in.png'
 
-        cap = cv2.VideoCapture(0)
-        while (True):
-            start_time = time.time()
+        # cap = cv2.VideoCapture(0)
+        cap = WebcamVideoStream(src=0, width=640, height=480).start()# test
+        self.live_view_on = True
+        start_time = time.time()
+
+        while (self.live_view_on):
             # Capture frame-by-frame
-            ret, frame = cap.read()
+            # ret, frame = cap.read()
+            frame = cap.read()
 
             # operations on the frame
             # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -238,15 +437,26 @@ class App(QWidget):
             if press_key & 0xFF == ord('q') or press_key == 27 or press_key == 13:
                 break
 
-            stop_time= time.time()
+            stop_time = time.time()
             duration = stop_time - start_time
-            # print('Hz: ' + str(1/duration))
+            print('FPS: ' + str(1/duration))
+            start_time = time.time()
 
             cv2.imwrite(self.img_path, frame)
             self.redraw_in_and_out()
 
+            if self.do_record_vid:
+                res_img = cv2.imread(self.res_im_path)
+                in_img = cv2.imread(self.in_im_path)
+                to_save_frame = np.concatenate((in_img, res_img), axis=1)
+                self.out_vid.write(to_save_frame)
+                # self.out_vid.write(res_img)
+                # self.out_vid.write(in_img)
+
+        cap.stop() # test
+
         # When everything done, release the capture
-        cap.release()
+        # cap.release()
         cv2.destroyAllWindows()
         cv2.imwrite(self.img_path,frame)
         self.redraw_in_and_out()
@@ -255,6 +465,8 @@ class App(QWidget):
         self.label.setEnabled(True)
         self.pushbutton_take_pic.setEnabled(True)
         self.label_net.setEnabled(True)
+        self.cb_ft.setEnabled(True)
+
 
         cv2.imwrite(self.img_path, frame)
         self.pushbutton_take_pic.setText('live webcam view')
@@ -269,6 +481,20 @@ class App(QWidget):
         shutil.copyfile(self.res_im_path, savepath[:-4] + '_out' + savepath[-4:])
 
 
+    def cb_face_traucker_changed(self,cb):
+        self.use_face_locations = self.cb_ft.isChecked()
+
+    def record_vid(self):
+        if not self.do_record_vid:
+            self.pushbutton_record.setText('Stop')
+            # self.out_vid = cv2.VideoWriter('outpy_tmp_test.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (640, 480))
+            self.out_vid = cv2.VideoWriter('output_vid.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (2*640, 480))
+            self.do_record_vid = True
+
+        else:
+            self.do_record_vid = False
+            self.pushbutton_record.setText('Record')
+            self.out_vid.release()
 
 
     def __init__(self):
@@ -280,14 +506,20 @@ class App(QWidget):
         self.height = 480  # 480
         self.layout = QVBoxLayout()
         self.hbox = QHBoxLayout()
+        self.hbox2 = QHBoxLayout()
         self.random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
         self.random_entropy_direction = Variable(torch.randn(1, style_dim, 1, 1).cuda())
         self.random_entropy_direction /= torch.norm(self.random_entropy_direction)
         self.res_im_path = None
-
+        self.use_face_locations = False
+        self.live_view_on = False
+        self.do_record_vid = False
+        self.out_vid = None
         self.layout.addLayout(self.hbox)
         self.in_image_label = QLabel("in")
         self.in_image_label.setUpdatesEnabled(True)
+        # self.in_image_label.setFixedHeight(640)
+        # self.in_image_label.setFixedWidth(480)
         self.hbox.addWidget(self.in_image_label)
         self.hbox.addStretch()
         self.layout.addStretch()
@@ -302,9 +534,26 @@ class App(QWidget):
         self.label.setAlignment(Qt.AlignCenter)
         self.layout.addWidget(self.label)
 
+
+        self.layout.addLayout(self.hbox2)
+
+        self.cb_ft = QCheckBox("face trucker")
+        self.cb_ft.setChecked(False)
+        self.cb_ft.stateChanged.connect(self.cb_face_traucker_changed)
+        # self.layout.addWidget(self.cb_ft)
+        self.hbox2.addWidget(self.cb_ft, stretch=1)
+
         self.pushbutton_take_pic = QPushButton(text='live webcam view')
         self.pushbutton_take_pic.pressed.connect(self.take_pic_button_pressed)
-        self.layout.addWidget(self.pushbutton_take_pic)
+        # self.layout.addWidget(self.pushbutton_take_pic)
+        self.hbox2.addWidget(self.pushbutton_take_pic, stretch=4)
+
+        self.pushbutton_record = QPushButton(text='record')
+        self.pushbutton_record.pressed.connect(self.record_vid)
+        # self.layout.addWidget(self.pushbutton_take_pic)
+        self.hbox2.addWidget(self.pushbutton_record, stretch=1)
+
+
 
         self.pushbutton_random_entropy = QPushButton(text='new random entropy vector & entropy vector direction')
         self.pushbutton_random_entropy.pressed.connect(self.random_button_pressed)
