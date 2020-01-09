@@ -11,7 +11,7 @@ from networks import Vgg16
 from torch.autograd import Variable
 from torch.optim import lr_scheduler
 from torchvision import transforms
-from data import ImageFilelist, ImageFolder, ImageFolder_Double
+from data import ImageFilelist, ImageFolder, ImageFolder_with_subfolders
 import torch
 import torch.nn as nn
 import os
@@ -197,7 +197,7 @@ def get_data_loader_folder(input_folder, batch_size, train, new_size=None,
     else:
         input_folder_1 = os.path.join(input_folder, '1')
         input_folder_2 = os.path.join(input_folder, '2')
-        dataset = ImageFolder_Double(root1=input_folder_1, root2=input_folder_2, ratio_1_to_2=ratio_1_to_2, transform=transform)
+        dataset = ImageFolder_with_subfolders(root1=input_folder_1, root2=input_folder_2, ratio_1_to_2=ratio_1_to_2, transform=transform)
 
     loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=train, drop_last=True, num_workers=num_workers)
     return loader

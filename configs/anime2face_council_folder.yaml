@@ -3,7 +3,7 @@
 image_save_iter:  1000         # How often do you want to save output images during training
 image_display_iter: 100       # How often do you want to display output images during training
 display_size: 15              # How many images do you want to display each time
-snapshot_save_iter: 10000      # How often do you want to save trained models
+snapshot_save_iter: 10000 # 10000      # How often do you want to save trained models
 log_iter: 1                   # How often do you want to log the training stats
 
 # optimization options
@@ -25,7 +25,7 @@ recon_s_w: 0                  # weight of style reconstruction loss
 recon_c_w: 0                  # weight of content reconstruction loss
 recon_x_cyc_w: 0              # weight of explicit style augmented cycle consistency loss
 vgg_w: 0                      # weight of domain-invariant perceptual loss
-council_w: 6 # 4                 # weight of Council loss
+council_w: 6 # 13 # 10 # 6 # 4                 # weight of Council loss
 council_abs_w: 0              # weight of Council loss abs between images if you use this loss there should be no need to use the regular council_w as well (with this loss active there will be less or no multimodal output)
 council_abs_gray_scale: False # is set to true the council loss will use the gray scale image not the rgb one
 mask_zero_or_one_w: 0         # weight of part of the focus loss.controls how much the mask should approach binery values (zeros or ones)
@@ -113,7 +113,7 @@ council:
   flipOnOff_start_with: True
   flipOnOff_On_iteration: 45
   flipOnOff_Off_iteration: 5
-  discriminetro_less_style_by: 0.6 # 71
+  discriminetro_less_style_by: 0.7 # 0.6 # 71
   council_start_at_iter: 1000  # start using the council loss for the specified iteration
 
 
@@ -129,26 +129,26 @@ crop_image_width: 256                       # random crop image of this width
 
 do_HorizontalFlip: True
 do_VerticalFlip: False
-do_ColorJitter_A: True
-do_ColorJitter_B: True
+do_ColorJitter_A: False # True
+do_ColorJitter_B: False # True # False #
 ColorJitter_hue: 0.1
-ColorJitter_brightness: 0.1
-ColorJitter_saturation: 0.1
-ColorJitter_contrast: 0.1
+ColorJitter_brightness: 0.25
+ColorJitter_saturation: 0.25
+ColorJitter_contrast: 0.25
 
-do_RandomGrayscale: True
+do_RandomGrayscale: True # False
 RandomGrayscale_P: 0.05
 
-do_RandomRotation: False
+do_RandomRotation: False # True # False
 RandomRotation_degree: 35
 
-do_RandomAffine: False
+do_RandomAffine: False # True # False
 RandomAffine_translate_h: 0.2
 RandomAffine_translate_w: 0.2
 
-do_RandomPerspective: False
+do_RandomPerspective: False # True # False
 
-do_RandomResizedCrop: False
+do_RandomResizedCrop: False # True # False
 RandomResizedCrop_scale_max: 2
 RandomResizedCrop_scale_min: 0.5
 RandomResizedCrop_ratio_max: 4. / 3.
@@ -169,3 +169,4 @@ misc:
 
 
 
+compare_transform_consistency: False # True # TODO test!!!

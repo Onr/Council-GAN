@@ -132,7 +132,7 @@ class ImageFolder(data.Dataset):
 
 
 
-class ImageFolder_Double(data.Dataset):
+class ImageFolder_with_subfolders(data.Dataset):
 # choose the data from the subfolder acording to probability
     # TODO complete usege
     def __init__(self, root1, root2, ratio_1_to_2, transform=None, return_paths=False,
