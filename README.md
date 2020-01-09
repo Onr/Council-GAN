@@ -69,4 +69,9 @@ for converting all the images in input_folder using all the members in the counc
 or using spsified memeber:
 
     python test_on_folder.py --config configs/anime2face_council_folder.yaml --output_folder ./outputs/council_anime2face_256_256 --checkpoint ./outputs/council_anime2face_256_256/anime2face_council_folder/checkpoints/b2a_gen_3_01000000.pt --input_folder ./datasets/selfie2anime/testB --b2a
+        
+#### Test GUI:
+![gan_council_overview](/images/test_gui.png)
+    python test_gui.py --config configs/galsses_council_folder.yaml --checkpoint ./outputs/council_glasses_128_128/galsses_council_folder/checkpoints/a2b_gen_0_00700000.pt
+    
 #### Citation
