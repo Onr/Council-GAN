@@ -262,8 +262,8 @@ class Council_Trainer(nn.Module):
         return torch.abs((torch.sum(mask) / mask.numel()))
 
     def mask_criterion_TV(self, mask):
-        return torch.sum(torch.abs(mask[:,:,1:,:]-mask[:,:,:-1,:])) + \
-               torch.sum(torch.abs(mask[:, :, :, 1:] - mask[:, :, :, :-1])) / mask.numel()
+        return (torch.sum(torch.abs(mask[:,:,1:,:]-mask[:,:,:-1,:])) + \
+               torch.sum(torch.abs(mask[:, :, :, 1:] - mask[:, :, :, :-1]))) / mask.numel()
 
 
     def forward(self, x_a, x_b=None, s_a=None, s_b=None):
@@ -498,7 +498,6 @@ class Council_Trainer(nn.Module):
                         self.loss_gen_mask_total_ba_s[i] += self.mask_small_criterion(mask_ba_s[i])
 
                 # TV loss on the mask
-
                 if hyperparameters['mask_tv_w'] != 0:
                     if hyperparameters['do_a2b']:
                         self.loss_gen_mask_TV_ab_s[i] += self.mask_criterion_TV(mask_ab_s[i])
@@ -506,7 +505,6 @@ class Council_Trainer(nn.Module):
                     if hyperparameters['do_b2a']:
                         self.loss_gen_mask_TV_ba_s[i] += self.mask_criterion_TV(mask_ba_s[i])
                         self.loss_gen_total_s[i] += hyperparameters['mask_tv_w'] * self.loss_gen_mask_TV_ba_s[i]
-
 
                 if self.do_w_loss_matching_focus:
                     print('===== 3 =====')
