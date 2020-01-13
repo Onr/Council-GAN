@@ -216,7 +216,31 @@ def eformat(f, prec):
 
 
 def __write_images(image_outputs, display_image_num, file_name):
-    image_outputs = [images.expand(-1, 3, -1, -1) for images in image_outputs] # expand gray-scale images to 3 channels
+
+
+    if image_outputs[0].shape[1]>3:
+        rand_ind = np.random.randint(low=0,high=image_outputs[0].shape[1]) # TODO tmp
+        rand_ind = 2
+        # image_outputs = [torch.unsqueeze(images[:,np.random.randint(low=0,high=images.shape[1]),:,:],1).expand(-1, 3, -1, -1) for images in image_outputs] # TODO tmp
+
+        # image_outputs = [images.cpu() for images in image_outputs] # TODO tmp
+        # print(image_outputs[0][:,[0,2,3],:,:].shape)
+
+        # image_outputs = [print(images.shape) for images in image_outputs] # TODO tmp
+        # image_outputs = [images[:, [0, 2, 3], :, :] if images.shape[1] > 3 else images for images in image_outputs] # TODO tmp
+
+        rand_disp_index_s = range(image_outputs[0].shape[1])
+        rand_disp_index_s = np.random.permutation(rand_disp_index_s)
+        rand_disp_index_s = rand_disp_index_s[:3]
+        rand_disp_index_s = np.sort(rand_disp_index_s)
+        # image_outputs = [images[:,rand_disp_index_s,:,:] for images in image_outputs] # TODO tmp
+        image_outputs = [images[:, rand_disp_index_s, :, :] if images.shape[1] > 3 else images for images in image_outputs] # TODO tmp
+
+        # print(image_outputs.shape)
+        # print('here')
+
+    else:
+        image_outputs = [images.expand(-1, 3, -1, -1) for images in image_outputs] # expand gray-scale images to 3 channels
     image_tensor = torch.cat([images[:display_image_num] for images in image_outputs], 0)
     image_grid = vutils.make_grid(image_tensor.data, nrow=display_image_num, padding=0, normalize=True)
 

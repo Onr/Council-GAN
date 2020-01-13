@@ -52,8 +52,8 @@ class Council_Trainer(nn.Module):
         self.council_abs_w_conf = hyperparameters['council_abs_w']
         self.council_w_conf = hyperparameters['council_w']
 
-        self.council_start_at_iter = hyperparameters['council']['council_start_at_iter']
-        self.focus_loss_start_at_iter = hyperparameters['focus_loss']['focus_loss_start_at_iter']
+        self.council_start_at_iter_conf = hyperparameters['council']['council_start_at_iter']
+        self.focus_loss_start_at_iter_conf = hyperparameters['focus_loss']['focus_loss_start_at_iter']
         self.mask_zero_or_one_w_conf = hyperparameters['mask_zero_or_one_w']
         self.mask_zero_or_one_center_conf = hyperparameters['focus_loss']['mask_zero_or_one_center']
         self.mask_zero_or_one_epsilon_conf = hyperparameters['focus_loss']['mask_zero_or_one_epsilon']
