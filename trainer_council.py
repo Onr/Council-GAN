@@ -14,6 +14,9 @@ from multiprocessing.pool import ThreadPool
 import warnings
 from collections import deque
 import numpy as np
+import torchvision.transforms.functional as TF
+from scipy import ndimage
+
 
 # from simple_classifier import ClassifierTest
 
@@ -50,6 +53,7 @@ class Council_Trainer(nn.Module):
         self.council_w_conf = hyperparameters['council_w']
 
         self.council_start_at_iter = hyperparameters['council']['council_start_at_iter']
+        self.focus_loss_start_at_iter = hyperparameters['focus_loss']['focus_loss_start_at_iter']
         self.mask_zero_or_one_w_conf = hyperparameters['mask_zero_or_one_w']
         self.mask_zero_or_one_center_conf = hyperparameters['focus_loss']['mask_zero_or_one_center']
         self.mask_zero_or_one_epsilon_conf = hyperparameters['focus_loss']['mask_zero_or_one_epsilon']
@@ -332,6 +336,9 @@ class Council_Trainer(nn.Module):
         self.loss_gen_vgg_b_s = []
         self.loss_gen_total_s = []
         self.council_w_conf = hyperparameters['council_w'] if hyperparameters['iteration'] > hyperparameters['council']['council_start_at_iter'] else 0
+        self.mask_zero_or_one_w_conf = hyperparameters['mask_zero_or_one_w'] if hyperparameters['iteration'] > hyperparameters['focus_loss']['focus_loss_start_at_iter'] else 0
+        self.mask_total_w_conf = hyperparameters['mask_total_w'] if hyperparameters['iteration'] > hyperparameters['focus_loss']['focus_loss_start_at_iter'] else 0
+        self.mask_tv_w_conf = hyperparameters['mask_tv_w'] if hyperparameters['iteration'] > hyperparameters['focus_loss']['focus_loss_start_at_iter'] else 0
 
 
         for i in range(self.council_size):
@@ -356,6 +363,8 @@ class Council_Trainer(nn.Module):
                 x_ab_s.append(self.gen_a2b_s[i].decode(c_a_s[i], s_b, x_a))
             if self.do_b2a_conf:
                 x_ba_s.append(self.gen_b2a_s[i].decode(c_b_s[i], s_a, x_b))
+
+
 
             if hyperparameters['mask_zero_or_one_w'] != 0 or hyperparameters['mask_total_w'] != 0:
                 if self.do_a2b_conf:
@@ -390,6 +399,65 @@ class Council_Trainer(nn.Module):
             if hyperparameters['do_b2a']:
                 self.loss_gen_mask_TV_ba_s.append(0)
                 self.loss_gen_mask_total_ba_s.append(0)
+
+
+
+
+            # TODO test
+            import torchvision
+
+            if hyperparameters['compare_transform_consistency']:
+                #  transform the image and then pass through the net work,
+                #  then compare the result to the transformed output when the input was not transformed
+                angle = (random.random()-0.5)*45
+                shift = [0, 0, (random.random()-0.5)*50, (random.random()-0.5)*50]
+                if self.do_a2b_conf:
+                    x_a_rot = x_a.cpu()
+                    x_a_rot = ndimage.rotate(input=x_a_rot, angle=angle, axes=(2, 3), reshape=False)
+                    x_a_rot = ndimage.shift(input=x_a_rot, shift=shift)
+                    x_a_rot = torch.tensor(x_a_rot).cuda()
+                    x_a_rot = torchvision.transforms.functional.affine(degrees=angle,translate=shift)(x_a_rot)
+
+                    c_a_rot, _ = self.gen_a2b_s[i].encode(x_a_rot)
+                    rot_a2b = self.gen_a2b_s[i].decode(c_a_rot, s_b, x_a_rot)
+                    a2b_rot = x_ab_s[i].detach().cpu()
+                    a2b_rot = ndimage.rotate(input=a2b_rot, angle=angle, axes=(2, 3), reshape=False)
+                    a2b_rot = ndimage.shift(input=a2b_rot, shift=shift)
+                    a2b_rot = torch.tensor(a2b_rot).cuda()
+
+                    self.loss_gen_total_s[i] += self.council_basic_criterion_with_color(rot_a2b, a2b_rot)
+
+                if self.do_b2a_conf:
+                    x_b_rot = x_b.cpu()
+                    x_b_rot = ndimage.rotate(input=x_b_rot, angle=angle, axes=(2, 3), reshape=False)
+                    x_b_rot = ndimage.shift(input=x_b_rot, shift=shift)
+                    x_b_rot = torch.tensor(x_b_rot).cuda()
+
+                    c_b_rot, _ = self.gen_b2a_s[i].encode(x_b_rot)
+                    rot_b2a = self.gen_b2a_s[i].decode(c_b_rot, s_a, x_b_rot)
+                    b2a_rot = x_ba_s[i].detach().cpu()
+
+                    b2a_rot = ndimage.rotate(input=b2a_rot, angle=angle, axes=(2, 3), reshape=False)
+                    b2a_rot = ndimage.shift(input=b2a_rot, shift=shift)
+                    b2a_rot = torch.tensor(b2a_rot).cuda()
+
+                    # b2a_rot = torchvision.transforms.ToPILImage()(b2a_rot.cpu())
+                    # b2a_rot = torchvision.transforms.functional.affine(Img=b2a_rot, angle=angle,translate=shift, scale=1, shear=(0,0))
+
+
+
+
+                    self.loss_gen_total_s[i] += 1 * self.council_basic_criterion_with_color(rot_b2a, b2a_rot)
+
+                    # import torchvision # TODO DEL
+                    # torchvision.utils.save_image(x_b.cpu(),'./test1234_in.png') # TODO DEL
+                    # torchvision.utils.save_image(rot_b2a,'./test1234_rot_befor.png') # TODO DEL
+                    # torchvision.utils.save_image(b2a_rot,'./test1234_rot_after.png') # TODO DEL
+                    # print('DEl') # TODO DEL
+
+
+
+
 
             # masks should contain ones or zeros
             if hyperparameters['iteration'] > hyperparameters['focus_loss']['focus_loss_start_at_iter'] and (hyperparameters['mask_zero_or_one_w'] != 0 or hyperparameters['mask_total_w'] != 0 ):

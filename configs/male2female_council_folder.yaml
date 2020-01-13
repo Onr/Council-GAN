@@ -35,7 +35,7 @@ mask_tv_w: 0
 focus_loss:
   mask_zero_or_one_center: 0.5
   mask_zero_or_one_epsilon: 0.01
-  focus_loss_start_at_iter: 20000
+  focus_loss_start_at_iter: 50000
   do_w_loss_matching_focus: False # not stable
 
 abs_beginning_end: 0          # weight of abs loss between the input image and the generated one
@@ -46,8 +46,9 @@ do_w_loss_matching: True # True      # match between the mean of the gan and the
 loss_matching_hist_size: 100  # the history to do avereg on so the gan loss and the council loss will match
 
 inbalenceDataSets:
-  test_inbalaced_sub_dataset: False
-  number_of_sub_dataset: 1
+  imbalance_sub_dataset: False # True # TODO chack that the folder are with subfolder and this set to false works properly
+  ratio_A_1_to_2: 0.5 # 0.x from A/1 and 1-0.x from A/2
+  ratio_B_1_to_2: 0.5 # 0.x from B/1 and 1-0.x from B/2
 
 # model options
 gen:
@@ -91,9 +92,9 @@ do_b2a: False
 input_dim_a: 3                              # number of image channels [1/3]
 input_dim_b: 3                              # number of image channels [1/3]
 num_workers: 8                              # number of data loading threads
-new_size: 128 # 256                                # first resize the shortest image side to this size
-crop_image_height: 128 # 256                     # random crop image of this height
-crop_image_width: 128 # 256                       # random crop image of this width
+new_size: 256                                # first resize the shortest image side to this size
+crop_image_height: 256                     # random crop image of this height
+crop_image_width: 256                       # random crop image of this width
 
 do_HorizontalFlip: True
 do_VerticalFlip: False
@@ -137,3 +138,4 @@ misc:
 
 
 
+compare_transform_consistency: False
