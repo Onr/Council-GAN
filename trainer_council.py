@@ -163,10 +163,11 @@ class Council_Trainer(nn.Module):
             self.dis_council_opt_s = []
             self.dis_council_scheduler_s = []
 
-        dis_parms = []
-        gen_parms = []
-        dis_council_parms = []
+
         for i in range(self.council_size):
+            dis_parms = []
+            gen_parms = []
+            dis_council_parms = []
             if self.do_a2b_conf:
                 dis_parms += list(self.dis_a2b_s[i].parameters())
                 gen_parms += list(self.gen_a2b_s[i].parameters())
@@ -1033,7 +1034,7 @@ class Council_Trainer(nn.Module):
                     self.dis_council_scheduler_s[i] = get_scheduler(self.dis_council_opt_s[i], hyperparameters,
                                                                     iterations)
             except:
-                warnings.warn('some optimizer FAILED to load')
+                warnings.warn('some optimizer FAILED to load ')
         if iterations > 0 :
             print('Resume from iteration %d' % iterations)
         else:

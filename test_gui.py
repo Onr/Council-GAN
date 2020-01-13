@@ -13,6 +13,8 @@ from torch.autograd import Variable
 from data import ImageFolder
 import numpy as np
 import torchvision.utils as vutils
+import warnings
+
 try:
     from itertools import izip as zip
 except ImportError: # will be 3.x series
@@ -145,9 +147,10 @@ def load_net(checkpoint):
             trainer.gen_b2a_s[0].load_state_dict(state_dict['b2a'])
             encode_s[0] = trainer.gen_b2a_s[0].encode  # encode function
             decode_s[0] = trainer.gen_b2a_s[0].decode  # decode function
-    except  Exception as e:
+    except Exception as e:
         print(e)
-        print('FAILED to load network!')
+        warnings.warn('FAILED to load network! the yaml config file might be wrong ')
+
 
 
 

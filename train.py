@@ -211,7 +211,6 @@ try:
     while True:
         tmp_train_loader_a, tmp_train_loader_b = (train_loader_a[0], train_loader_b[0])
         for it, (images_a, images_b) in enumerate(zip(tmp_train_loader_a, tmp_train_loader_b)):
-            trainer.update_learning_rate()
             images_a, images_b = images_a.cuda().detach(), images_b.cuda().detach()
 
             print("Iteration: " + str(iterations + 1) + "/" + str(max_iter) + " Elapsed time " + str(time.time()-t)[:5])
@@ -388,6 +387,9 @@ try:
                     trainer.save(checkpoint_directory, iterations)
                 if config['misc']['do_telegram_report']:
                     telegram_bot_send_message('snapshot saved iter: ' + str(iterations))
+
+            trainer.update_learning_rate()
+
 except Exception as e:
     print('Error')
     print('-' * 60)

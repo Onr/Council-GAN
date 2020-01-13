@@ -3,12 +3,12 @@
 image_save_iter:  1000         # How often do you want to save output images during training
 image_display_iter: 100       # How often do you want to display output images during training
 display_size: 15              # How many images do you want to display each time
-snapshot_save_iter: 50000      # How often do you want to save trained models
+snapshot_save_iter: 50_000      # How often do you want to save trained models
 log_iter: 1                   # How often do you want to log the training stats
 
 # optimization options
 random_seed: 1
-max_iter: 1500000             # maximum number of training iterations
+max_iter: 1_500_000             # maximum number of training iterations
 batch_size: 3                 # batch size
 weight_decay: 0.0001          # weight decay
 beta1: 0.5                    # Adam parameter
@@ -16,7 +16,7 @@ beta2: 0.999                  # Adam parameter
 init: kaiming                 # initialization [gaussian/kaiming/xavier/orthogonal]
 lr: 0.0001                    # initial learning rate
 lr_policy: step               # learning rate scheduler
-step_size: 100000             # how often to decay learning rate
+step_size: 100_000             # how often to decay learning rate
 gamma: 0.5                    # how much to decay learning rate
 
 gan_w: 24 # 22                     # weight of adversarial loss
@@ -28,9 +28,9 @@ vgg_w: 0                      # weight of domain-invariant perceptual loss
 council_w: 12 # 8 # 4 # 6                  # weight of Council loss
 council_abs_w: 0              # weight of Council loss abs between images if you use this loss there should be no need to use the regular council_w as well (with this loss active there will be less or no multimodal output)
 council_abs_gray_scale: False # is set to true the council loss will use the gray scale image not the rgb ones
-mask_zero_or_one_w: 15 # 10 # 2 # 1 # 0.1 # 0.01 # 4         # weight of part of the focus loss.controls how much the mask should approach binery values (zeros or ones)
-mask_total_w: 300 # 350 # 400 # 500 # 400 # 300 # 250 # 200 # 170 # 150 # 120 # 100 #40 # 30 # 20 # 10 # 5 # 200 # 100 # 0.1 # 0.001 # 0.1              # weight of the 2nd part of the focus loss. controls how much the mask should be small
-mask_tv_w: 0.1
+mask_zero_or_one_w: 17 # 15 # 10 # 2 # 1 # 0.1 # 0.01 # 4         # weight of part of the focus loss.controls how much the mask should approach binery values (zeros or ones)
+mask_total_w: 350 # 300 # 350 # 400 # 500 # 400 # 300 # 250 # 200 # 170 # 150 # 120 # 100 #40 # 30 # 20 # 10 # 5 # 200 # 100 # 0.1 # 0.001 # 0.1              # weight of the 2nd part of the focus loss. controls how much the mask should be small
+mask_tv_w: 2 # 1.8
 
 focus_loss:
   mask_zero_or_one_center: 0.5
@@ -164,7 +164,7 @@ misc:
   telegram_report_add_prefix: glasses
 
 
-
+compare_transform_consistency: False
 
 
 
