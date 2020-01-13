@@ -966,7 +966,7 @@ class Council_Trainer(nn.Module):
                     self.dis_council_scheduler_s[i] = get_scheduler(self.dis_council_opt_s[i], hyperparameters,
                                                                     iterations)
             except:
-                warnings.warn('some optimizer FAILED to load (optimizer_' + str(i) + '.pt)')
+                warnings.warn('some optimizer FAILED to load ')
         if iterations > 0 :
             print('Resume from iteration %d' % iterations)
         else:
