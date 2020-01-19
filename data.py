@@ -134,45 +134,19 @@ class ImageFolder(data.Dataset):
             img = self.loader(path)
             if self.transform is not None:
                 img = self.transform(img)
-        else:
-            img = torch.from_numpy(np.load(path))  # TODO add transform maybe pre channale
+        else:  # numpy data input # for brats dataset  # TODO add transforms
+            img = torch.from_numpy(np.load(path))
             img = img.transpose(dim0=2, dim1=0)
             img = img.transpose(dim0=1, dim1=2)
             img = img.to(dtype=torch.float)
             from torchvision import transforms
-            ones = torch.ones(img.shape[0])
-            # print('1 mean:' + str(torch.mean(img, dim=(1, 2))))
-            # print('1 std:' + str(torch.std(img, dim=(1, 2))))
-
-            # mean_vec = torch.tensor([2.4895e+02, 3.0568e+02, 2.8807e+02, 3.3596e+02,  6.2165e-02])
-            # std_vec = 5 * torch.tensor([1.2838e+03, 1.4377e+03, 1.0548e+03, 1.4393e+03, 3.8917e-01])
+            import torch.nn.functional as F
             mean_vec = torch.mean(img, dim=(1, 2))
             std_vec = torch.std(img, dim=(1, 2))
             img = transforms.Normalize(mean=mean_vec, std=std_vec)(img)
-
-
-            # self.num_of_sample += 1
-            # if self.mean is not None:
-            #     self.mean = (self.mean * (self.num_of_sample - 1) + torch.mean(img, dim=(1, 2))) / self.num_of_sample
-            #     self.mean_pow2 = (self.mean_pow2 * (self.num_of_sample - 1) + torch.mean(img**2, dim=(1, 2))) / self.num_of_sample
-            #     self.std = np.sqrt(self.mean_pow2 - self.mean ** 2)
-            #     # print('std: ' + str(self.std) + '  Num_of_sample: ' + str(self.num_of_sample))
-            #     # print('mean:' + str(self.mean) + '  Num_of_sample: ' + str(self.num_of_sample))
-            # else:
-            #     self.mean = torch.mean(img, dim=(1, 2))
-            #     self.mean_pow2 = torch.mean(img**2, dim=(1, 2))
-
-
-
-
-
-
-            # img = transforms.Normalize(mean=ones*0.5, std=ones*0.5)(img)
-            # print('mean:' + str(self.mean) + '  Num_of_sample: ' + str(self.num_of_sample))
-
-
-            # img = img - torch.mean(img, dim=(1, 2))
-            # img = img - torch.mean(img, dim=(1, 2)).unsqueeze(1).unsqueeze(1).expand(img.shape)
+            size = [elem for elem in self.transform.transforms if type(elem) == transforms.transforms.Resize][0].size
+            img = F.interpolate(input=torch.unsqueeze(img,0), size=size)
+            img = torch.squeeze(img)
             img = img[:-1,:,:]
             # img = img[[0,2,3],:,:]
 

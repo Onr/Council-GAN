@@ -238,11 +238,9 @@ try:
             torch.cuda.synchronize()
             iterations += 1
 
-
             # write training stats in log file
             if (iterations + 1) % config['log_iter'] == 0:
                 write_loss(iterations, trainer, train_writer)
-
             # test FID
             if config['misc']['do_test_Fid'] and (iterations + 1) % config['misc']['test_Fid_iter'] == 0:
                 if config['do_a2b']:
@@ -387,7 +385,6 @@ try:
                     trainer.save(checkpoint_directory, iterations)
                 if config['misc']['do_telegram_report']:
                     telegram_bot_send_message('snapshot saved iter: ' + str(iterations))
-
             trainer.update_learning_rate()
 
 except Exception as e:
