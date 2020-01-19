@@ -143,6 +143,7 @@ def load_net(checkpoint):
 from torchvision import transforms
 from torchvision.utils import save_image
 import time
+
 telegram_res_path = './telegram_tmp'
 telegram_res_path = os.path.join(telegram_res_path, time.ctime(time.time()))
 
@@ -150,14 +151,17 @@ if not os.path.exists(telegram_res_path):
     os.mkdir(telegram_res_path)
 
 
+# from test_gui import run_net_work
 
-def run_net_work(img_path, entropy):
+def run_net_work(img_path, entropy, use_face_locations=False):
     run_net_work.counter += 1
     out_im_path = os.path.join(telegram_res_path, 'tmp_' + str(run_net_work.counter) + '.png')
     in_im_path = os.path.join(telegram_res_path, 'tmp_' + str(run_net_work.counter) + '_in.png')
     height = 128
     width = 128
     new_size = 128
+
+
     img = Image.open(img_path).convert('RGB')
     mean = torch.tensor([0.5, 0.5, 0.5])
     std = torch.tensor([0.5, 0.5, 0.5])
@@ -253,8 +257,12 @@ def telegram_command(update, context):
         telegram_image_save_path = os.path.join(telegram_res_path, "telegram_recived.jpg")
         urllib.request.urlretrieve(im_url, telegram_image_save_path)
 
+
+
+
+
         random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
-        run_net_work(telegram_image_save_path, random_entropy)
+        run_net_work(img_path=telegram_image_save_path, entropy=random_entropy, use_face_locations=True)
 
         in_image_path = os.path.join(telegram_res_path, 'tmp_' + str(run_net_work.counter) + '_in.png')
         with open(in_image_path, 'rb') as in_file:
@@ -265,8 +273,9 @@ def telegram_command(update, context):
             context.bot.send_photo(chat_id=update.message.chat_id, photo=res_file, filename=config['misc']['telegram_report_add_prefix'], caption='output')
 
         # context.bot.sendMessage(update.message.chat_id, text='enter chat_id in to: ' + confidential_yaml_file_path + ' as:')
-    except:
+    except Exception as e:
         context.bot.send_message(chat_id=update.message.chat_id, text='Failed')
+        print(e)
 
 
 
