@@ -5,6 +5,7 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 import torch.utils.data as data
 import os.path
 import torch
+import numpy as np
 
 def default_loader(path):
     return Image.open(path).convert('RGB')
@@ -96,6 +97,9 @@ def make_dataset(dir):
             if is_image_file(fname):
                 path = os.path.join(root, fname)
                 images.append(path)
+            elif fname.endswith('.npy'):
+                path = os.path.join(root, fname)
+                images.append(path)
 
     return images
 
@@ -116,11 +120,42 @@ class ImageFolder(data.Dataset):
         self.return_paths = return_paths
         self.loader = loader
 
+        # TODO tmp
+        self.mean = 0
+        self.std = None
+        self.mean_pow2 = 0
+
+        self.num_of_sample = 0
+
+
     def __getitem__(self, index):
         path = self.imgs[index]
-        img = self.loader(path)
-        if self.transform is not None:
-            img = self.transform(img)
+        if not path.endswith('.npy'):
+            img = self.loader(path)
+            if self.transform is not None:
+                img = self.transform(img)
+        else:  # numpy data input # for brats dataset  # TODO add transforms
+            img = torch.from_numpy(np.load(path))
+            img = img.transpose(dim0=2, dim1=0)
+            img = img.transpose(dim0=1, dim1=2)
+            img = img.to(dtype=torch.float)
+            from torchvision import transforms
+            import torch.nn.functional as F
+            mean_vec = torch.mean(img, dim=(1, 2))
+            std_vec = torch.std(img, dim=(1, 2))
+            img = transforms.Normalize(mean=mean_vec, std=std_vec)(img)
+            size = [elem for elem in self.transform.transforms if type(elem) == transforms.transforms.Resize][0].size
+            img = F.interpolate(input=torch.unsqueeze(img,0), size=size)
+            img = torch.squeeze(img)
+            img = img[:-1,:,:]
+            # img = img[[0,2,3],:,:]
+
+            # dim0 Flair
+            # dim1 T1
+            # dim2 T1ce
+            # dim3 T2
+            # dim4 Seg
+
         if self.return_paths:
             return img, path
         else:

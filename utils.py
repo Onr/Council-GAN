@@ -54,20 +54,8 @@ def get_all_data_loaders(conf):
 
     train_loader_a, train_loader_b, test_loader_a, test_loader_b = [], [], [], []
     if 'data_root' in conf:
-        if 'inbalenceDataSets' in conf: # TODO remove option to not have inbalenceDatasets
+        if 'inbalenceDataSets' in conf:
             if (conf['inbalenceDataSets']['imbalance_sub_dataset']):
-                # for k in range(conf['inbalenceDataSets']['number_of_sub_dataset']):
-                #     if conf['inbalenceDataSets']['number_of_sub_dataset'] > 1:
-                #         trainA = os.path.join('trainA', str(k+1)) if os.path.isdir(os.path.join(conf['data_root'], 'trainA', str(k+1))) else 'trainA'
-                #         trainB = os.path.join('trainB', str(k+1)) if os.path.isdir(os.path.join(conf['data_root'], 'trainB', str(k+1))) else 'trainB'
-                #         testA = os.path.join('testA', str(k+1)) if os.path.isdir(os.path.join(conf['data_root'], 'testA', str(k+1))) else 'testA'
-                #         testB = os.path.join('testB', str(k+1)) if os.path.isdir(os.path.join(conf['data_root'], 'testB', str(k+1))) else 'testB'
-                #     else:
-                #         trainA = 'trainA'
-                #         trainB = 'trainB'
-                #         testA = 'testA'
-                #         testB = 'testB'
-                #
 
                 train_loader_a.append(get_data_loader_folder(os.path.join(conf['data_root'],  'trainA'), batch_size, True,
                                                              new_size_a, height, width, num_workers, True, config=conf,
@@ -113,7 +101,6 @@ def get_all_data_loaders(conf):
         test_loader_b.append(get_data_loader_list(conf['data_folder_test_b'], conf['data_list_test_b'], batch_size, False,
                                                 new_size_b, new_size_b, new_size_b, num_workers, True, is_data_A=False))
     return train_loader_a, train_loader_b, test_loader_a, test_loader_b
-
 
 def get_data_loader_list(root, file_list, batch_size, train, new_size=None,
                            height=256, width=256, num_workers=4, crop=True):
@@ -185,8 +172,6 @@ def get_data_loader_folder(input_folder, batch_size, train, new_size=None,
             config['RandomAffine_translate_w']
             transform_list = [transforms.RandomAffine(translate=(config['RandomAffine_translate_h'], config['RandomAffine_translate_w']), degrees=0, scale=(0.9, 1.1))] + transform_list if train else transform_list
 
-
-
     if config is not None:
         if config['do_RandomPerspective']:
             transform_list = [transforms.RandomPerspective(distortion_scale=0.35, p=0.5)] + transform_list if train else transform_list
@@ -202,11 +187,9 @@ def get_data_loader_folder(input_folder, batch_size, train, new_size=None,
     loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=train, drop_last=True, num_workers=num_workers)
     return loader
 
-
 def get_config(config):
     with open(config, 'r') as stream:
         return yaml.safe_load(stream)
-
 
 def eformat(f, prec):
     s = "%.*e"%(prec, f)
@@ -214,9 +197,15 @@ def eformat(f, prec):
     # add 1 to digits as 1 is taken by sign +/-
     return "%se%d"%(mantissa, int(exp))
 
-
 def __write_images(image_outputs, display_image_num, file_name):
-    image_outputs = [images.expand(-1, 3, -1, -1) for images in image_outputs] # expand gray-scale images to 3 channels
+    if image_outputs[0].shape[1]>3:
+        rand_disp_index_s = range(image_outputs[0].shape[1])
+        rand_disp_index_s = np.random.permutation(rand_disp_index_s)
+        rand_disp_index_s = rand_disp_index_s[:3]
+        rand_disp_index_s = np.sort(rand_disp_index_s)
+        image_outputs = [images[:, rand_disp_index_s, :, :] if images.shape[1] > 3 else images for images in image_outputs] # TODO tmp
+    else:
+        image_outputs = [images.expand(-1, 3, -1, -1) for images in image_outputs] # expand gray-scale images to 3 channels
     image_tensor = torch.cat([images[:display_image_num] for images in image_outputs], 0)
     image_grid = vutils.make_grid(image_tensor.data, nrow=display_image_num, padding=0, normalize=True)
 
@@ -236,9 +225,7 @@ def write_2images(image_outputs, display_image_num, image_directory, postfix, do
         gen_a2b_im = __write_images(image_outputs[0:n//2], display_image_num, '%s/gen_a2b_%s.jpg' % (image_directory, postfix)) if do_a2b else None
     if do_b2a:
         gen_b2a_im = __write_images(image_outputs[n//2:n], display_image_num, '%s/gen_b2a_%s.jpg' % (image_directory, postfix)) if do_b2a else None
-
     return gen_a2b_im, gen_b2a_im
-
 
 def prepare_sub_folder(output_directory):
     image_directory = os.path.join(output_directory, 'images')
@@ -255,7 +242,6 @@ def prepare_sub_folder(output_directory):
         os.makedirs(checkpoint_log)
     return checkpoint_directory, image_directory, checkpoint_log
 
-
 def write_one_row_html(html_file, iterations, img_filename, all_size):
     html_file.write("<h3>iteration [%d] (%s)</h3>" % (iterations,img_filename.split('/')[-1]))
     html_file.write("""
@@ -265,7 +251,6 @@ def write_one_row_html(html_file, iterations, img_filename, all_size):
         <p>
         """ % (img_filename, img_filename, all_size))
     return
-
 
 def write_html(filename, iterations, image_save_iterations, image_directory, all_size=1536, do_a2b=True, do_b2a=True):
     html_file = open(filename, "w")
@@ -296,7 +281,6 @@ def write_html(filename, iterations, image_save_iterations, image_directory, all
     html_file.write("</body></html>")
     html_file.close()
 
-
 def write_loss(iterations, trainer, train_writer):
     members = [attr for attr in dir(trainer)
                if not callable(getattr(trainer, attr)) and not attr.startswith("__") and ('loss' in attr or 'grad' in attr or 'conf' in attr or 'nwd' in attr or 'do' in attr)]
@@ -323,7 +307,6 @@ def write_loss(iterations, trainer, train_writer):
                     tmpScal.update({str(i): listItem.data.cpu().numpy()})
                 else:
                     tmpScal.update({m + '_' + str(i): listItem})
-
             train_writer.add_scalars(m, tmpScal, iterations + 1)
         else:
             train_writer.add_scalar(m, tmpatter, iterations + 1)

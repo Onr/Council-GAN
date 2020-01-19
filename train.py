@@ -58,10 +58,25 @@ torch.backends.cudnn.benchmark = False
 # Setup model and data loader
 train_loader_a, train_loader_b, test_loader_a, test_loader_b = get_all_data_loaders(config)
 
-train_display_images_a = torch.stack([train_loader_a[0].dataset[np.random.randint(train_loader_a[0].__len__())] for i in range(display_size)]).cuda()
-train_display_images_b = torch.stack([train_loader_b[0].dataset[np.random.randint(train_loader_b[0].__len__())] for i in range(display_size)]).cuda()
-test_display_images_a = torch.stack([test_loader_a[0].dataset[np.random.randint(test_loader_a[0].__len__())] for i in range(display_size)]).cuda()
-test_display_images_b = torch.stack([test_loader_b[0].dataset[np.random.randint(test_loader_b[0].__len__())] for i in range(display_size)]).cuda()
+try:  # TODO tmp find what file are bad
+    train_display_images_a = torch.stack([train_loader_a[0].dataset[np.random.randint(train_loader_a[0].__len__())] for _ in range(display_size)]).cuda()
+except:  # TODO tmp find what file are bad
+    train_display_images_a = torch.stack([train_loader_a[0].dataset[np.random.randint(train_loader_a[0].__len__())] for _ in range(display_size)]).cuda()
+try:  # TODO tmp find what file are bad
+    train_display_images_b = torch.stack([train_loader_b[0].dataset[np.random.randint(train_loader_b[0].__len__())] for _ in range(display_size)]).cuda()
+except:  # TODO tmp find what file are bad
+    train_display_images_b = torch.stack([train_loader_b[0].dataset[np.random.randint(train_loader_b[0].__len__())] for _ in range(display_size)]).cuda()
+try:  # TODO tmp find what file are bad
+    test_display_images_a = torch.stack([test_loader_a[0].dataset[np.random.randint(test_loader_a[0].__len__())] for _ in range(display_size)]).cuda()
+except:  # TODO tmp find what file are bad
+    # test_display_images_a = torch.stack([test_loader_a[0].dataset[np.random.randint(test_loader_a[0].__len__())] for _ in range(display_size)]).cuda()
+    test_display_images_a = None
+
+try:  # TODO tmp find what file are bad
+    test_display_images_b = torch.stack([test_loader_b[0].dataset[np.random.randint(test_loader_b[0].__len__())] for _ in range(display_size)]).cuda()
+except:  # TODO tmp find what file are bad
+    test_display_images_b = torch.stack([test_loader_b[0].dataset[np.random.randint(test_loader_b[0].__len__())] for _ in range(display_size)]).cuda()
+
 
 trainer = Council_Trainer(config)
 trainer.cuda()
@@ -223,11 +238,9 @@ try:
             torch.cuda.synchronize()
             iterations += 1
 
-
             # write training stats in log file
             if (iterations + 1) % config['log_iter'] == 0:
                 write_loss(iterations, trainer, train_writer)
-
             # test FID
             if config['misc']['do_test_Fid'] and (iterations + 1) % config['misc']['test_Fid_iter'] == 0:
                 if config['do_a2b']:
@@ -354,6 +367,7 @@ try:
             if (iterations + 1) % config['image_display_iter'] == 0:
                 with torch.no_grad():
                     image_outputs = trainer.sample(train_display_images_a, train_display_images_b)
+
                 write_2images(image_outputs, display_size * config['council']['council_size'], image_directory,
                               'train_current', do_a2b=config['do_a2b'], do_b2a=config['do_b2a'])
 
@@ -371,7 +385,6 @@ try:
                     trainer.save(checkpoint_directory, iterations)
                 if config['misc']['do_telegram_report']:
                     telegram_bot_send_message('snapshot saved iter: ' + str(iterations))
-
             trainer.update_learning_rate()
 
 except Exception as e:
