@@ -71,7 +71,6 @@ try:  # TODO tmp find what file are bad
 except:  # TODO tmp find what file are bad
     # test_display_images_a = torch.stack([test_loader_a[0].dataset[np.random.randint(test_loader_a[0].__len__())] for _ in range(display_size)]).cuda()
     test_display_images_a = None
-
 try:  # TODO tmp find what file are bad
     test_display_images_b = torch.stack([test_loader_b[0].dataset[np.random.randint(test_loader_b[0].__len__())] for _ in range(display_size)]).cuda()
 except:  # TODO tmp find what file are bad
@@ -212,6 +211,10 @@ try:
         tmp_train_loader_a, tmp_train_loader_b = (train_loader_a[0], train_loader_b[0])
         for it, (images_a, images_b) in enumerate(zip(tmp_train_loader_a, tmp_train_loader_b)):
             images_a, images_b = images_a.cuda().detach(), images_b.cuda().detach()
+
+            images_a = images_a[:, :-1, :, :] if images_a.shape[1] == config['input_dim_a'] + 1 else images_a #  this is for BraTS dataset
+            images_b = images_b[:, :-1, :, :] if images_b.shape[1] == config['input_dim_b'] + 1 else images_b #  this is for BraTS dataset
+
 
             print("Iteration: " + str(iterations + 1) + "/" + str(max_iter) + " Elapsed time " + str(time.time()-t)[:5])
             t = time.time()

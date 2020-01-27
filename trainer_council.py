@@ -254,16 +254,25 @@ class Council_Trainer(nn.Module):
 
     def mask_small_criterion(self, mask):
         # return self.mask_small_criterion_squer(mask)
-        return self.mask_small_criterion_squer(mask)
+        assert self.hyperparameters['focus_loss']['mask_small_use_abs'] or self.hyperparameters['focus_loss']['mask_small_use_square'], 'at leas one small mask loss should be true, mask_small_use_abs or mask_small_use_square'
 
-    def mask_small_criterion_squer(self, mask):
+        loss = 0
+        if self.hyperparameters['focus_loss']['mask_small_use_abs']:
+            loss += self.mask_small_criterion_abs(mask)
+        if self.hyperparameters['focus_loss']['mask_small_use_square']:
+            loss += self.mask_small_criterion_square(mask)
+        return loss
+
+        # return self.mask_small_criterion_squer(mask)
+
+    def mask_small_criterion_square(self, mask):
         return (torch.sum(mask) / mask.numel()) ** 2
 
     def mask_small_criterion_abs(self, mask):
-        return torch.abs((torch.sum(mask) / mask.numel()))
+        return torch.abs((torch.sum(mask))) / mask.numel()
 
     def mask_criterion_TV(self, mask):
-        return (torch.sum(torch.abs(mask[:,:,1:,:]-mask[:,:,:-1,:])) + \
+        return (torch.sum(torch.abs(mask[:, :, 1:, :]-mask[:, :, :-1, :])) + \
                torch.sum(torch.abs(mask[:, :, :, 1:] - mask[:, :, :, :-1]))) / mask.numel()
 
 
@@ -293,7 +302,7 @@ class Council_Trainer(nn.Module):
         return x_ab_s
 
     def gen_update(self, x_a, x_b, hyperparameters, iterations=0):
-
+        self.hyperparameters = hyperparameters
         for gen_opt in self.gen_opt_s:
             gen_opt.zero_grad()
         s_a = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
@@ -726,14 +735,22 @@ class Council_Trainer(nn.Module):
     def sample(self, x_a=None, x_b=None, s_a=None, s_b=None, council_member_to_sample_vec=None, return_mask=True):
         # council_member_to_sample_vec = list of indexes of council members to sample with
         self.eval()
+        gt_x_a = torch.unsqueeze(x_a[:, -1, :, :], 1).repeat(1, 4, 1, 1) / 4  # this is for BraTS dataset
+        gt_x_b = torch.unsqueeze(x_b[:, -1, :, :], 1).repeat(1, 4, 1, 1) / 4  # this is for BraTS dataset
+        x_a = x_a[:, :-1, :, :] if x_a.shape[1] == self.hyperparameters['input_dim_a'] + 1 else x_a  # this is for BraTS dataset
+        x_b = x_b[:, :-1, :, :] if x_b.shape[1] == self.hyperparameters['input_dim_b'] + 1 else x_b  # this is for BraTS dataset
+
         if self.do_a2b_conf:
             x_a_s = []
+            gt_x_a_s = []
             s_b = self.s_b if s_b is None else s_b
             s_b1 = Variable(s_b)
             s_b2 = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
             x_a_recon, x_ab1, x_ab2, x_ab1_mask = [], [], [], []
         if self.do_b2a_conf:
             x_b_s = []
+            gt_x_b_s = []
+
             s_a = self.s_a if s_a is None else s_a
             s_a1 = Variable(s_a)
             s_a2 = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda())
@@ -745,6 +762,7 @@ class Council_Trainer(nn.Module):
             for j in council_member_to_sample_vec:
                 if self.do_b2a_conf:
                     x_b_s.append(x_b[i].unsqueeze(0))
+                    gt_x_b_s.append(gt_x_b[i].unsqueeze(0))
                     c_b, s_b_fake = self.gen_b2a_s[j].encode(x_b[i].unsqueeze(0))
                     if not return_mask:
                         x_b_recon.append(self.gen_b2a_s[j].decode(c_b, s_b_fake, x_b[i].unsqueeze(0)))
@@ -757,6 +775,8 @@ class Council_Trainer(nn.Module):
                         x_ba2.append(self.gen_b2a_s[j].decode(c_b, s_a2[i].unsqueeze(0), x_b[i].unsqueeze(0)))
                 if self.do_a2b_conf:
                     x_a_s.append(x_a[i].unsqueeze(0))
+                    gt_x_a_s.append(gt_x_a[i].unsqueeze(0))
+
                     c_a, s_a_fake = self.gen_a2b_s[j].encode(x_a[i].unsqueeze(0))
                     if not return_mask:
                         x_a_recon.append(self.gen_a2b_s[j].decode(c_a, s_a_fake, x_a[i].unsqueeze(0)))
@@ -777,6 +797,7 @@ class Council_Trainer(nn.Module):
 
         if self.do_b2a_conf:
             x_b_s = torch.cat(x_b_s)
+            gt_x_b_s = torch.cat(gt_x_b_s)
             x_ba1, x_ba2 = torch.cat(x_ba1), torch.cat(x_ba2)
             if not return_mask:
                 x_b_recon = torch.cat(x_b_recon)
@@ -784,6 +805,7 @@ class Council_Trainer(nn.Module):
                 x_ba1_mask = torch.cat(x_ba1_mask)
         if self.do_a2b_conf:
             x_a_s = torch.cat(x_a_s)
+            gt_x_a_s = torch.cat(gt_x_a_s)
             x_ab1, x_ab2 = torch.cat(x_ab1), torch.cat(x_ab2)
             if not return_mask:
                 x_a_recon = torch.cat(x_a_recon)
@@ -791,6 +813,26 @@ class Council_Trainer(nn.Module):
                 x_ab1_mask = torch.cat(x_ab1_mask)
 
         self.train()
+
+        do_diff = True
+        if do_diff:
+            if self.do_a2b_conf:
+                x_ab1 = x_a_s - x_ab1
+                x_ab2 = x_a_s - x_ab2
+            if self.do_b2a_conf:
+                x_ba1 = x_b_s - x_ba1
+                x_ba2 = x_b_s - x_ba2
+        do_show_gt = True
+        if do_show_gt: # for BraTS dataset
+            if self.do_a2b_conf:
+                x_ab1 = gt_x_a_s
+                # x_ab1 = gt_x_a.repeat(3, 4, 1, 1) / 4 # / torch.mean(gt_x_a) #* torch.mean(x_ab1)
+            if self.do_b2a_conf:
+                x_ba1 = gt_x_b_s
+
+                # x_ba1 = gt_x_b.repeat(3, 4, 1, 1) / 4 # / torch.mean(gt_x_b) #* torch.mean(x_ba1)
+
+
         if not return_mask:
             if self.do_a2b_conf and self.do_b2a_conf:
                 return x_a_s, x_a_recon, x_ab1, x_ab2, x_b_s, x_b_recon, x_ba1, x_ba2

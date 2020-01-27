@@ -147,8 +147,7 @@ class ImageFolder(data.Dataset):
             size = [elem for elem in self.transform.transforms if type(elem) == transforms.transforms.Resize][0].size
             img = F.interpolate(input=torch.unsqueeze(img,0), size=size)
             img = torch.squeeze(img)
-            img = img[:-1,:,:]
-            # img = img[[0,2,3],:,:]
+            # img = img[:-1,:,:]
 
             # dim0 Flair
             # dim1 T1
