@@ -12,6 +12,8 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
 
 ![male2female_gif](/images/m2f_gif.gif)
 
+![anime_gif](/images/anime_gif.gif)
+
 
 ## Usage
 
