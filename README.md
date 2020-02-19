@@ -16,6 +16,10 @@ implementation of our paper Breaking the Cycle - Colleagues are all you need
 
 
 ## Usage
+### install requirements
+
+    pip install -r pip_requirements.txt 
+    conda env create -f conda_requirements.yml
 
 ### Downloading the dataset
 #### download the selfie to anime dataset:
