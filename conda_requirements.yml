@@ -73,6 +73,7 @@ dependencies:
   - setuptools=45.2.0=py37_0
   - six=1.14.0=py37_0
   - sqlite=3.31.1=h7b6447c_0
+  - tensorboard=1.15.0=py36_0
   - tensorboardx=2.0=py_0
   - termcolor=1.1.0=py37_1
   - tk=8.6.8=hbc83047_0
