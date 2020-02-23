@@ -35,6 +35,8 @@ mask_tv_w: 0
 focus_loss:
   mask_zero_or_one_center: 0.5
   mask_zero_or_one_epsilon: 0.01
+  mask_small_use_abs: False
+  mask_small_use_square: True
   focus_loss_start_at_iter: 50000
   do_w_loss_matching_focus: False # not stable
 
