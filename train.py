@@ -119,8 +119,8 @@ if config['misc']['do_telegram_report']:
         with open(confidential_yaml_file_path, 'w') as confidential_yaml_file:
             confidential_yaml_file.write('bot_token: xxxx\n')
             confidential_yaml_file.write('chat_id: xxxx')
-        print(colored('create a telegram bot using a chat with \"BotFather\" and enter its token into ' + confidential_yaml_file_path, color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
-        print('you can turn telegram report off from the config.yaml file')
+        print(colored('Create a telegram bot. this is done by 1) downloding and signing into telegram.  \n2) starting a chat with \"BotFather\" \n3) send him the text "/newbot", then follow the "BotFather" instraction to creat the bot \n4)when you are done you will recive a the new bot token. enter the token into the file: "' + confidential_yaml_file_path + 'which was create in the currnt directory', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
+        print('==== You can turn telegram report OFF from the config.yaml file ====')
         input('when you are done press Enter')
 
 
@@ -128,7 +128,8 @@ if config['misc']['do_telegram_report']:
 
     while confidential_conf['bot_token'] == 'xxxx':
         print(colored('TOKEN not defined yet'))
-        print(colored('create a telegram bot using a chat with BotFather and enter its token into ' + confidential_yaml_file_path, color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
+        print(colored('Create a telegram bot. this is done by 1) downloding and signing into telegram.  \n2) starting a chat with \"BotFather\" \n3) send him the text "/newbot", then follow the "BotFather" instraction to creat the bot \n4)when you are done you will recive a the new bot token. enter the token into the file: "' + confidential_yaml_file_path + 'which was create in the currnt directory', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
+        print('==== You can turn telegram report OFF from the config.yaml file ====')
         input('when you are done press Enter')
         confidential_conf = get_config(confidential_yaml_file_path)
 
@@ -149,7 +150,8 @@ if config['misc']['do_telegram_report']:
 
 
     while confidential_conf['chat_id'] == 'xxxx':
-        print(colored('CHAT ID is not defined send your telegram bot a random message to get your chat id, then enter it into ' + confidential_yaml_file_path, color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
+        print(colored('CHAT ID is not defined send your telegram bot a random message to get your chat id, then enter it into the file:' + confidential_yaml_file_path, color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
+        print('==== You can turn telegram report OFF from the config.yaml file ====')
         input('when you are done press Enter')
         confidential_conf = get_config(confidential_yaml_file_path)
     updater.stop()
