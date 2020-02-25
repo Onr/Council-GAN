@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='configs/edges2handbags_folder', help='Path to the config file.')
 parser.add_argument('--input_folder', type=str, help="input image folder")
 parser.add_argument('--output_folder', type=str, help="output image folder")
-parser.add_argument('--output_path', type=str, default='.outputs', help="outputs path")
+parser.add_argument('--output_path', type=str, default='outputs', help="outputs path")
 
 parser.add_argument('--checkpoint', type=str, help="checkpoint of autoencoders")
 parser.add_argument('--b2a', action='store_true', help=" whether to run b2a defult a2b")
