@@ -82,9 +82,12 @@ or using spsified memeber:
     python test_gui.py --config configs/galsses_council_folder.yaml --checkpoint ./outputs/council_glasses_128_128/galsses_council_folder/checkpoints/a2b_gen_0_00700000.pt
     
 #### Citation
+```
 @inproceedings{nizan2020council,
   title={Breaking the Cycle - Colleagues are all you need},
   author={Ori Nizan, Ayellet Tal},
   booktitle={IEEE conference on computer vision and pattern recognition (CVPR)},
   year={2020}
 }
+```
+
