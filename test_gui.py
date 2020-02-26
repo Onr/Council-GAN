@@ -224,9 +224,9 @@ from torchvision.utils import save_image
 def run_net_work(img_path, entropy, use_face_locations=False):
     out_im_path = './tmp.jpg'
     in_im_path = './tmp_in.jpg'
-    net_hight = 128
-    net_width = 128
-    net_new_size = 128
+    net_hight = config['crop_image_height']
+    net_width = config['crop_image_width']
+    net_new_size = config['new_size']
 
 
 
