@@ -38,7 +38,7 @@ elif [ $FILE == "celeba_glasses_removal" ]; then
     unzip $ZIP_FILE -d ./datasets/
     rm $ZIP_FILE
 else
-    echo "Available arguments are celeba_male2female, celeba_glasses_removal, selfie2anime."
+    echo "Available arguments are celeba_male2female, celeba_glasses_removal, U_GAT_IT_selfie2anime."
     exit 1
 
 
