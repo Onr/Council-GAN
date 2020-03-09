@@ -47,45 +47,6 @@ abs_beginning_end_minimume: 0 # the minimal value abs loss should reach and stay
 do_w_loss_matching: True      # match between the mean of the gan and the council loss (mean of the last "loss_matching_hist_size" sampels
 loss_matching_hist_size: 100  # the history to do avereg on so the gan loss and the council loss will match
 
-inbalenceDataSets:
-  imbalance_sub_dataset: False # Create basic inblace between domains for instance, A/1-male with galsses, A/2-male without galsses, B/1-female with galsses, B/2-female without galsses)
-  ratio_A_1_to_2: 0.5 # 0.x from A/1 and 1-0.x from A/2
-  ratio_B_1_to_2: 0.5 # 0.x from B/1 and 1-0.x from B/2
-
-# ────────────────────────────────────────────────
-# to use inbalenceDataSets dataset in this format:
-#   ├──datasets
-#       └──DATASET_NAME
-#           ├──testA
-#             ├──1
-#               ├──im1.png
-#               └── ...
-#             └──2
-#               ├──im2.png
-#               └── ...
-#           ├──testB
-#             ├──1
-#               ├──im3.png
-#               └── ...
-#             └──2
-#               ├──im4.png
-#               └── ...
-#           ├──trainA
-#             ├──1
-#               ├──im5.png
-#               └── ...
-#             └──2
-#               ├──im6.png
-#               └── ...
-#           └──trainB
-#             ├──1
-#               ├──im7.png
-#               └── ...
-#             └──2
-#               ├──im8.png
-#               └── ...
-# ────────────────────────────────────────────────
-
 # model options
 gen:
   dim: 64                     # number of filters in the bottommost layer
@@ -98,6 +59,7 @@ gen:
   pad_type: zero              # padding type [zero/reflect]
   useRandomDis: False         # when coucil is used each generator is trained agest all discriminetors making them more foucos on commen domain featcuers
   num_of_mask_dim_to_add: 3
+
 dis:
   dim: 64                     # number of filters in the bottommost layer
   norm: none                  # normalization layer [none/bn/in/ln]
@@ -161,6 +123,45 @@ RandomResizedCrop_ratio_max: 4. / 3.
 RandomResizedCrop_ratio_min: 3. / 4.
 
 data_root: ./datasets/selfie2anime   # dataset folder location
+
+inbalenceDataSets:
+  imbalance_sub_dataset: False # Create basic inblace between domains for instance, A/1-male with galsses, A/2-male without galsses, B/1-female with galsses, B/2-female without galsses)
+  ratio_A_1_to_2: 0.5 # 0.x from A/1 and 1-0.x from A/2
+  ratio_B_1_to_2: 0.5 # 0.x from B/1 and 1-0.x from B/2
+
+# ────────────────────────────────────────────────
+# to use inbalenceDataSets dataset in this format:
+#   ├──datasets
+#       └──DATASET_NAME
+#           ├──testA
+#             ├──1
+#               ├──im1.png
+#               └── ...
+#             └──2
+#               ├──im2.png
+#               └── ...
+#           ├──testB
+#             ├──1
+#               ├──im3.png
+#               └── ...
+#             └──2
+#               ├──im4.png
+#               └── ...
+#           ├──trainA
+#             ├──1
+#               ├──im5.png
+#               └── ...
+#             └──2
+#               ├──im6.png
+#               └── ...
+#           └──trainB
+#             ├──1
+#               ├──im7.png
+#               └── ...
+#             └──2
+#               ├──im8.png
+#               └── ...
+# ────────────────────────────────────────────────
 
 misc:
   start_tensor_board: True
