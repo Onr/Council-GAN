@@ -57,7 +57,7 @@ gen:
   n_downsample: 2             # number of downsampling layers in content encoder
   n_res: 5                    # number of residual blocks in content encoder/decoder
   pad_type: zero              # padding type [zero/reflect]
-  useRandomDis: False         # when coucil is used each generator is trained agest all discriminetors making them more foucos on commen domain featcuers
+  useRandomDis: False         # each generator is compared against all discriminetors
   num_of_mask_dim_to_add: 3  
 
 dis:
@@ -68,7 +68,7 @@ dis:
   gan_type: lsgan             # GAN loss [lsgan/nsgan] RelativisticAverageHingeGAN
   num_scales: 2               # number of scales
   pad_type: zero              # padding type [zero/reflect]
-  useRandomGen: False         # when coucil is used each discriminetor is trained agest all generators making them more foucos on commen domain featcuers
+  useRandomGen: False         # each discriminetor is compared against all generators
   do_Dis_only_gray: False
   numberOf_dis_relative_iteration: 1
 
