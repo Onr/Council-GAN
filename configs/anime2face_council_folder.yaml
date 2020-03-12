@@ -104,19 +104,19 @@ ColorJitter_brightness: 0.25
 ColorJitter_saturation: 0.25
 ColorJitter_contrast: 0.25
 
-do_RandomGrayscale: True # False
+do_RandomGrayscale: True
 RandomGrayscale_P: 0.05
 
-do_RandomRotation: False # True # False
+do_RandomRotation: False
 RandomRotation_degree: 35
 
-do_RandomAffine: False # True # False
+do_RandomAffine: False
 RandomAffine_translate_h: 0.2
 RandomAffine_translate_w: 0.2
 
-do_RandomPerspective: False # True # False
+do_RandomPerspective: False
 
-do_RandomResizedCrop: False # True # False
+do_RandomResizedCrop: False
 RandomResizedCrop_scale_max: 2
 RandomResizedCrop_scale_min: 0.5
 RandomResizedCrop_ratio_max: 4. / 3.
@@ -166,7 +166,7 @@ inbalenceDataSets:
 misc:
   start_tensor_board: True
   start_tensor_board port: 6006
-  do_test_Fid: True # True
+  do_test_Fid: True
   test_Fid_iter: 1_000
   test_Fid_num_of_im: 100
   do_telegram_report: True  # set to true to have progress report using telegram. run pip install python-telegram-bot, install telegram app, run train.py and follow the instructions.      (you need to obtain 2 numbers bot_token and chat_id then insert them in to a yaml file that will be created once you run train.py)
