@@ -42,23 +42,9 @@ parser.add_argument('--num_style',type=int, default=10, help="number of styles t
 parser.add_argument('--output_only', action='store_true', help="whether only save the output images or also save the input images")
 parser.add_argument('--num_of_images_to_test', type=int, default=10000, help="number of images to sample")
 
-data_name = 'out'
-
 opts = parser.parse_args()
 
 import sys
-
-
-
-
-
-
-
-
-
-
-
-
 torch.manual_seed(opts.seed)
 torch.cuda.manual_seed(opts.seed)
 
@@ -67,15 +53,10 @@ config = get_config(opts.config)
 input_dim = config['input_dim_a'] if not opts.b2a else config['input_dim_b']
 council_size = config['council']['council_size']
 
-
 # Setup model and data loader
-# image_names = ImageFolder(opts.input_folder, transform=None, return_paths=True)
 if not 'new_size_a' in config.keys():
     config['new_size_a'] = config['new_size']
 is_data_A = not opts.b2a
-# data_loader = get_data_loader_folder(opts.input_folder, 1, False,\
-#                                      new_size=config['new_size_a'] if 'new_size_a' in config.keys() else config['new_size'],\
-#                                      crop=False, config=config, is_data_A=is_data_A)
 
 
 style_dim = config['gen']['style_dim']
@@ -174,30 +155,15 @@ def run_net_work(img_path, entropy, use_face_locations=False):
     img = transform(img).unsqueeze(0).cuda()
     content, _ = encode_s[0](img)
     res_img = decode_s[0](content, entropy, img).detach().cpu().squeeze(0)
-    # res_img = transforms.ToPILImage()(res_img)
-    # res_img.save(out_im_path)
-
     res_img = transforms.Normalize(mean=(-mean/std), std=(1.0/std))(res_img)
     save_image(res_img, out_im_path)
-
-    # in_image = transforms.ToPILImage()(img.detach().cpu().squeeze(0))
     in_image = img.detach().cpu().squeeze(0)
-    # in_image.save(in_im_path)
 
     in_image = transforms.Normalize(mean=-mean/std, std=1/std)(in_image)
     save_image(in_image, in_im_path)
     return in_im_path, out_im_path
 
 run_net_work.counter = 0
-
-
-
-
-
-
-
-
-
 
 
 
@@ -223,9 +189,6 @@ while confidential_conf['bot_token_test'] == 'xxxx':
     confidential_conf = get_config(confidential_yaml_file_path)
 
 
-
-
-
 telegram_bot = telegram.Bot(token=confidential_conf['bot_token_test'])
 def telegram_bot_send_message(bot_message):
     try:
@@ -244,11 +207,7 @@ def telegram_bot_send_document(bot_document_path, filename=None):
         print('telegram send_document Failed')
 
 def telegram_command(update, context):
-    # if str(update.message.text) == 'cofig':
-    #     with open(opts.config, 'r') as tmp_conf:
-    #         telegram_bot_send_message(tmp_conf.read())
-    # for photo in update.message['photo']:
-    #     print(photo['file_id'])
+
     context.bot.send_message(chat_id=update.message.chat_id, text='Prossesing')
     try:
         photo_id = update.message['photo'][0]['file_id']
@@ -256,10 +215,6 @@ def telegram_command(update, context):
         import urllib.request
         telegram_image_save_path = os.path.join(telegram_res_path, "telegram_recived.jpg")
         urllib.request.urlretrieve(im_url, telegram_image_save_path)
-
-
-
-
 
         random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
         run_net_work(img_path=telegram_image_save_path, entropy=random_entropy, use_face_locations=True)
@@ -278,19 +233,13 @@ def telegram_command(update, context):
         print(e)
 
 
-
 updater = Updater(token=confidential_conf['bot_token_test'], use_context=True)
 dispatcher = updater.dispatcher
 dispatcher.add_handler(MessageHandler(Filters.photo, telegram_command))
 
 updater.start_polling()
 
-
 input(colored('telegram bot running - press enter to stop', color='yellow', attrs=['underline', 'bold', 'blink', 'reverse']))
 print(colored('stoping...', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
 updater.stop()
 print(colored('stoped', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
-
-
-
-

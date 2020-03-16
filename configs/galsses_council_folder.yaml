@@ -163,6 +163,3 @@ misc:
   do_telegram_report: True  # set to true to have progress report using telegram. set to True and follow the instructions
   do_telegram_send_config_file: True
   telegram_report_add_prefix: glasses_
-
-
-compare_transform_consistency: False # TODO

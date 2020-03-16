@@ -61,30 +61,6 @@ data_name = 'out'
 opts = parser.parse_args()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import sys
 
 torch.manual_seed(opts.seed)
@@ -154,17 +130,6 @@ def load_net(checkpoint):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 from threading import Thread, Lock
 
 class WebcamVideoStream :
@@ -209,14 +174,6 @@ class WebcamVideoStream :
 
 
 
-
-
-
-
-
-
-
-
 from torchvision import transforms
 from torchvision.utils import save_image
 
@@ -230,11 +187,6 @@ def run_net_work(img_path, entropy, use_face_locations=False):
 
 
 
-
-
-
-    # transform_list = [transforms.ToTensor()]
-
     mean = torch.tensor([0.5, 0.5, 0.5], dtype=torch.float32)
     std = torch.tensor([0.5, 0.5, 0.5], dtype=torch.float32)
     transform_list = [transforms.ToTensor(), transforms.Normalize(mean=mean.tolist(), std=std.tolist())]
@@ -242,9 +194,6 @@ def run_net_work(img_path, entropy, use_face_locations=False):
     transform_list = [transforms.CenterCrop((net_hight, net_width))] + transform_list
     transform_list = [transforms.Resize(net_new_size)] + transform_list
     transform = transforms.Compose(transform_list)
-
-
-
 
 
 
@@ -273,14 +222,8 @@ def run_net_work(img_path, entropy, use_face_locations=False):
         hight = bottom - top
         width = right - left
         if use_face_locations:
-
             # making the image larger because face_recognition  cuts the faces
-            # increes_by = int(max(hight, width) / 1.5)
             increes_by = int(max(hight, width) / 1.7)
-            # increes_by = int(max(hight, width) / 4)
-            # increes_by = 0
-
-
 
             if hight + increes_by > img_h or width + increes_by > img_w:
                 # increes_by is too big
@@ -301,8 +244,6 @@ def run_net_work(img_path, entropy, use_face_locations=False):
             if right >= img_w:
                 right = img_w - 1
                 left = right - width if right - width >= 0 else 0
-
-
 
             #make squer
             bottom = top + min(hight, width, img_h, img_w)
@@ -329,22 +270,7 @@ def run_net_work(img_path, entropy, use_face_locations=False):
         in_img[:, top:bottom, left:right] = transforms_size_prossesing(curr_face_image.cpu().squeeze(0))
 
     save_image(final_res_img, out_im_path)
-    # img = transforms.ToTensor()(img)
     save_image(in_img, in_im_path)
-
-    # img = Image.open(img_path)
-    # img = transform(img).unsqueeze(0).cuda()
-    # content, _ = encode_s[0](img)
-    # res_img = decode_s[0](content, entropy, img).detach().cpu().squeeze(0)
-
-
-    # res_img=transforms.Normalize(mean=(-1 * mean / std).tolist(), std=(1.0/std).tolist())(res_img)
-
-    # save_image(res_img, out_im_path)
-    # in_image = img.detach().cpu().squeeze(0)
-    # in_image=transforms.Normalize(mean=(-1 * mean / std).tolist(), std=(1.0/std).tolist())(in_image)
-    # save_image(in_image, in_im_path)
-
 
     return in_im_path, out_im_path
 
@@ -372,7 +298,6 @@ class App(QWidget):
         w = 256
         max_added_val = 250
         random_entropy_direction_mult = (self.slider.value() - self.slider.maximum() / 2) / (self.slider.maximum())
-        # print('random_entropy +  ' + str(random_entropy_direction_mult) + ' * random_entropy_direction')
         random_entropy = self.random_entropy + max_added_val * self.random_entropy_direction * random_entropy_direction_mult
 
         self.in_im_path, self.res_im_path = run_net_work(img_path=self.img_path, entropy=random_entropy, use_face_locations=self.use_face_locations)
@@ -384,8 +309,6 @@ class App(QWidget):
         self.in_image_label.repaint()
 
     def sliderReleased(self):
-        # self.slider.value()
-        # print(self.slider.value())
         self.redraw_in_and_out()
 
     def dropEvent(self, event):
@@ -406,37 +329,22 @@ class App(QWidget):
         self.redraw_in_and_out()
 
     def take_pic_button_pressed(self):
-        # self.slider.setEnabled(False)
-        # self.pushbutton_random_entropy.setEnabled(False)
-        # self.label.setEnabled(False)
         if self.live_view_on:
             self.live_view_on = False
             return
-        # self.pushbutton_take_pic.setEnabled(False)
-        # self.cb_ft.setEnabled(False)
-        # self.label_net.setEnabled(False)
         self.pushbutton_take_pic.setText('Press Here to Stop')
 
         print('press Esc to stop')
         self.img_path = './cap_tmp_in.png'
-
         # cap = cv2.VideoCapture(0)
-        cap = WebcamVideoStream(src=0, width=640, height=480).start()# test
+        cap = WebcamVideoStream(src=0, width=640, height=480).start()
         self.live_view_on = True
         start_time = time.time()
-
         while (self.live_view_on):
-            # Capture frame-by-frame
-            # ret, frame = cap.read()
             frame = cap.read()
-
-            # operations on the frame
-            # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
             # Display the resulting frame
             cv2.imshow('press ENTER to stop', frame)
             press_key = cv2.waitKey(1)
-
             if press_key & 0xFF == ord('q') or press_key == 27 or press_key == 13:
                 break
 
@@ -453,13 +361,8 @@ class App(QWidget):
                 in_img = cv2.imread(self.in_im_path)
                 to_save_frame = np.concatenate((in_img, res_img), axis=1)
                 self.out_vid.write(to_save_frame)
-                # self.out_vid.write(res_img)
-                # self.out_vid.write(in_img)
+        cap.stop()
 
-        cap.stop() # test
-
-        # When everything done, release the capture
-        # cap.release()
         cv2.destroyAllWindows()
         cv2.imwrite(self.img_path,frame)
         self.redraw_in_and_out()
@@ -490,7 +393,6 @@ class App(QWidget):
     def record_vid(self):
         if not self.do_record_vid:
             self.pushbutton_record.setText('Stop')
-            # self.out_vid = cv2.VideoWriter('outpy_tmp_test.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (640, 480))
             self.out_vid = cv2.VideoWriter('output_vid.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (2*640, 480))
             self.do_record_vid = True
 
@@ -521,8 +423,6 @@ class App(QWidget):
         self.layout.addLayout(self.hbox)
         self.in_image_label = QLabel("in")
         self.in_image_label.setUpdatesEnabled(True)
-        # self.in_image_label.setFixedHeight(640)
-        # self.in_image_label.setFixedWidth(480)
         self.hbox.addWidget(self.in_image_label)
         self.hbox.addStretch()
         self.layout.addStretch()
@@ -543,17 +443,14 @@ class App(QWidget):
         self.cb_ft = QCheckBox("face trucker")
         self.cb_ft.setChecked(False)
         self.cb_ft.stateChanged.connect(self.cb_face_traucker_changed)
-        # self.layout.addWidget(self.cb_ft)
         self.hbox2.addWidget(self.cb_ft, stretch=1)
 
         self.pushbutton_take_pic = QPushButton(text='live webcam view')
         self.pushbutton_take_pic.pressed.connect(self.take_pic_button_pressed)
-        # self.layout.addWidget(self.pushbutton_take_pic)
         self.hbox2.addWidget(self.pushbutton_take_pic, stretch=4)
 
         self.pushbutton_record = QPushButton(text='record')
         self.pushbutton_record.pressed.connect(self.record_vid)
-        # self.layout.addWidget(self.pushbutton_take_pic)
         self.hbox2.addWidget(self.pushbutton_record, stretch=1)
 
 
@@ -573,7 +470,6 @@ class App(QWidget):
         self.label_net.dropEvent = self.dropEvent_new_net
         self.label_net.setAlignment(Qt.AlignCenter)
         self.layout.addWidget(self.label_net)
-
 
         self.save_image = QPushButton(text='save image')
         self.save_image.pressed.connect(self.save_image_pressed)

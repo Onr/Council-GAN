@@ -170,8 +170,3 @@ misc:
   do_telegram_report: True  # set to true to have progress report using telegram. run pip install python-telegram-bot, install telegram app, run train.py and follow the instructions.      (you need to obtain 2 numbers bot_token and chat_id then insert them in to a yaml file that will be created once you run train.py)
   do_telegram_send_config_file: True
   telegram_report_add_prefix: male_2_female_
-
-
-
-
-compare_transform_consistency: False # TODO

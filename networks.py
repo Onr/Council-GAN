@@ -135,10 +135,8 @@ class MsImageDisCouncil(nn.Module):
         for i in range(self.n_layer - 1):
             cnn_x += [Conv2dBlock(dim, dim * 2, 4, 2, 1, norm=self.norm, activation=self.activ, pad_type=self.pad_type)]
             dim *= 2
-        # cnn_x += [nn.Conv2d(dim, 1, 1, 1, 0)] # originla
-        cnn_x += [nn.Conv2d(dim, dim, 1, 1, 0)]  # my ON
-        # cnn_x += [nn.Conv2d(dim, dim, 1, 1, 0)]  # my ON
-        cnn_x += [nn.Conv2d(dim, 1, 1, 1, 0)]  # my ON
+        cnn_x += [nn.Conv2d(dim, dim, 1, 1, 0)]
+        cnn_x += [nn.Conv2d(dim, 1, 1, 1, 0)]
         cnn_x = nn.Sequential(*cnn_x)
         return cnn_x
 
@@ -169,7 +167,6 @@ class MsImageDisCouncil(nn.Module):
             elif self.gan_type == 'RelativisticAverageHingeGAN':
                 self.prev_real_input = input_real  # save it for the gen train later
                 self.prev_input = input  # save it for the gen train later
-                # difference between real and fake:
                 # difference between real and fake:
                 r_f_diff = out1 - torch.mean(out0, dim=0, keepdim=True).repeat(10, 1, 1, 1)
                 # difference between fake and real samples
@@ -236,7 +233,6 @@ class AdaINGen(nn.Module):
         # content encoder
         self.enc_content = ContentEncoder(self.n_downsample, n_res, input_dim, dim, 'in', self.activ, pad_type=pad_type)
 
-        # self.dec = Decoder(n_downsample, n_res, self.enc_content.output_dim, input_dim, res_norm='adain', activ=activ, pad_type=pad_type)
         if self.do_my_style:
             self.dec = Decoder_V2_atten(n_upsample=self.n_downsample, n_res=n_res, dim=self.enc_content.output_dim + style_dim, output_dim=input_dim, res_norm='in', activ=self.activ, pad_type=pad_type, num_of_mask_dim_to_add=params['num_of_mask_dim_to_add'])
         else:
@@ -366,7 +362,6 @@ class Decoder_V2_atten(nn.Module):
 
         self.model += [Conv2dBlock(input_dim=dim, output_dim=dim, kernel_size=1, stride=1, padding=0, norm='none', activation=activ, pad_type=pad_type)]
         self.model += [Conv2dBlock(input_dim=dim, output_dim=dim, kernel_size=1, stride=1, padding=0, norm='none', activation=activ, pad_type=pad_type)]
-        # self.model += [Conv2dBlock(input_dim=dim, output_dim=output_dim+self.num_of_mask_dim_to_add, kernel_size=1, stride=1, padding=0, norm='none', activation='tanh', pad_type=pad_type)]
         self.model += [Conv2dBlock(input_dim=dim, output_dim=(output_dim*self.num_of_mask_dim_to_add+self.num_of_mask_dim_to_add), kernel_size=1, stride=1, padding=0, norm='none', activation='tanh', pad_type=pad_type)]
         self.model = nn.Sequential(*self.model)
 
@@ -456,7 +451,6 @@ class Conv2dBlock(nn.Module):
         if norm == 'bn':
             self.norm = nn.BatchNorm2d(norm_dim)
         elif norm == 'in':
-            #self.norm = nn.InstanceNorm2d(norm_dim, track_running_stats=True)
             self.norm = nn.InstanceNorm2d(norm_dim)
         elif norm == 'ln':
             self.norm = LayerNorm(norm_dim)
@@ -688,8 +682,6 @@ class SpectralNorm(nn.Module):
         for _ in range(self.power_iterations):
             v.data = l2normalize(torch.mv(torch.t(w.view(height,-1).data), u.data))
             u.data = l2normalize(torch.mv(w.view(height,-1).data, v.data))
-
-        # sigma = torch.dot(u.data, torch.mv(w.view(height,-1).data, v.data))
         sigma = u.dot(w.view(height, -1).mv(v))
         setattr(self.module, self.name, w / sigma.expand_as(w))
 

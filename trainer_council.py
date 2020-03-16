@@ -17,9 +17,6 @@ import numpy as np
 import torchvision.transforms.functional as TF
 from scipy import ndimage
 
-
-# from simple_classifier import ClassifierTest
-
 class Council_Trainer(nn.Module):
     def __init__(self, hyperparameters):
         super(Council_Trainer, self).__init__()
@@ -44,14 +41,11 @@ class Council_Trainer(nn.Module):
         self.gan_w_conf = hyperparameters['gan_w']
         self.vgg_w_conf = hyperparameters['vgg_w']
         self.abs_beginning_end_w_conf = hyperparameters['abs_beginning_end']
-
         self.flipOnOff_On_iteration_conf = hyperparameters['council']['flipOnOff_On_iteration']
         self.flipOnOff_Off_iteration_conf = hyperparameters['council']['flipOnOff_Off_iteration']
         self.flipOnOff_Off_iteration_conf = hyperparameters['council']['flipOnOff_start_with']
-
         self.council_abs_w_conf = hyperparameters['council_abs_w']
         self.council_w_conf = hyperparameters['council_w']
-
         self.council_start_at_iter_conf = hyperparameters['council']['council_start_at_iter']
         self.focus_loss_start_at_iter_conf = hyperparameters['focus_loss']['focus_loss_start_at_iter']
         self.mask_zero_or_one_w_conf = hyperparameters['mask_zero_or_one_w']
@@ -96,9 +90,6 @@ class Council_Trainer(nn.Module):
                 self.los_hist_focus_b2a_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
                 self.los_hist_focus_zero_one_b2a_s.append(deque(np.ones(self.los_matching_hist_size_conf)))
 
-
-
-
         self.do_council_loss = None
 
         if self.do_dis_council:
@@ -127,8 +118,6 @@ class Council_Trainer(nn.Module):
                                           hyperparameters['dis']))  # discriminator for domain b
 
 
-
-
         self.instancenorm = nn.InstanceNorm2d(512, affine=False)
         self.style_dim = hyperparameters['gen']['style_dim']
 
@@ -143,11 +132,11 @@ class Council_Trainer(nn.Module):
             if self.do_dis_council:
                 self.dis_council_b2a_s = nn.ModuleList(self.dis_council_b2a_s)
 
-
         # fix the noise used in sampling
         display_size = int(hyperparameters['display_size'])
         self.s_a = torch.randn(display_size, self.style_dim, 1, 1).cuda()
         self.s_b = torch.randn(display_size, self.style_dim, 1, 1).cuda()
+
         # Setup the optimizers
         beta1 = hyperparameters['beta1']
         beta2 = hyperparameters['beta2']
@@ -157,13 +146,10 @@ class Council_Trainer(nn.Module):
         self.gen_opt_s = []
         self.dis_scheduler_s = []
         self.gen_scheduler_s = []
-
         if self.do_dis_council:
             dis_council_params_s = []
             self.dis_council_opt_s = []
             self.dis_council_scheduler_s = []
-
-
         for i in range(self.council_size):
             dis_parms = []
             gen_parms = []
@@ -178,17 +164,13 @@ class Council_Trainer(nn.Module):
                 gen_parms += list(self.gen_b2a_s[i].parameters())
                 if self.do_dis_council:
                     dis_council_parms += list(self.dis_council_b2a_s[i].parameters())
-
             dis_params_s.append(dis_parms)
             gen_params_s.append(gen_parms)
             if self.do_dis_council:
                 dis_council_params_s.append(dis_council_parms)
-
-
             self.dis_opt_s.append(torch.optim.Adam([p for p in dis_params_s[i] if p.requires_grad],
                                                    lr=lr, betas=(beta1, beta2),
                                                    weight_decay=hyperparameters['weight_decay']))
-
             self.gen_opt_s.append(torch.optim.Adam([p for p in gen_params_s[i] if p.requires_grad],
                                                    lr=lr, betas=(beta1, beta2),
                                                    weight_decay=hyperparameters['weight_decay']))
@@ -196,12 +178,10 @@ class Council_Trainer(nn.Module):
                 self.dis_council_opt_s.append(torch.optim.Adam([p for p in dis_council_params_s[i] if p.requires_grad],
                                                                lr=lr, betas=(beta1, beta2),
                                                                weight_decay=hyperparameters['weight_decay']))
-
             self.dis_scheduler_s.append(get_scheduler(self.dis_opt_s[i], hyperparameters))
             self.gen_scheduler_s.append(get_scheduler(self.gen_opt_s[i], hyperparameters))
             if self.do_dis_council:
                 self.dis_council_scheduler_s.append(get_scheduler(self.dis_council_opt_s[i], hyperparameters))
-
 
         # Network weight initialization
         self.apply(weights_init(hyperparameters['init']))
@@ -216,7 +196,6 @@ class Council_Trainer(nn.Module):
                 self.dis_b2a_s[i].apply(weights_init('gaussian'))
                 if self.do_dis_council:
                     self.dis_council_b2a_s[i].apply(weights_init('gaussian'))
-
 
         # Load VGG model if needed
         self.vgg = None
@@ -253,17 +232,13 @@ class Council_Trainer(nn.Module):
         return torch.sum(1 / (torch.abs(mask - center) + epsilon)) / mask.numel()
 
     def mask_small_criterion(self, mask):
-        # return self.mask_small_criterion_squer(mask)
         assert self.hyperparameters['focus_loss']['mask_small_use_abs'] or self.hyperparameters['focus_loss']['mask_small_use_square'], 'at leas one small mask loss should be true, mask_small_use_abs or mask_small_use_square'
-
         loss = 0
         if self.hyperparameters['focus_loss']['mask_small_use_abs']:
             loss += self.mask_small_criterion_abs(mask)
         if self.hyperparameters['focus_loss']['mask_small_use_square']:
             loss += self.mask_small_criterion_square(mask)
         return loss
-
-        # return self.mask_small_criterion_squer(mask)
 
     def mask_small_criterion_square(self, mask):
         return (torch.sum(mask) / mask.numel()) ** 2
@@ -274,7 +249,6 @@ class Council_Trainer(nn.Module):
     def mask_criterion_TV(self, mask):
         return (torch.sum(torch.abs(mask[:, :, 1:, :]-mask[:, :, :-1, :])) + \
                torch.sum(torch.abs(mask[:, :, :, 1:] - mask[:, :, :, :-1]))) / mask.numel()
-
 
     def forward(self, x_a, x_b=None, s_a=None, s_b=None):
         self.eval()
@@ -349,7 +323,6 @@ class Council_Trainer(nn.Module):
         self.mask_total_w_conf = hyperparameters['mask_total_w'] if hyperparameters['iteration'] > hyperparameters['focus_loss']['focus_loss_start_at_iter'] else 0
         self.mask_tv_w_conf = hyperparameters['mask_tv_w'] if hyperparameters['iteration'] > hyperparameters['focus_loss']['focus_loss_start_at_iter'] else 0
 
-
         for i in range(self.council_size):
             # encode
             if self.do_a2b_conf:
@@ -360,6 +333,7 @@ class Council_Trainer(nn.Module):
                 c_b, s_b_prime = self.gen_b2a_s[i].encode(x_b)
                 c_b_s.append(c_b)
                 s_b_prime_s.append(s_b_prime)
+
             # decode (within domain)
             if hyperparameters['recon_x_w'] != 0:
                 if not self.do_a2b_conf and not self.do_b2a_conf:
@@ -367,19 +341,19 @@ class Council_Trainer(nn.Module):
                 else:
                     x_a_recon_s.append(self.gen_b2a_s[i].decode(c_a_s[i], s_a_prime_s[i], x_a))
                     x_b_recon_s.append(self.gen_a2b_s[i].decode(c_b_s[i], s_b_prime_s[i], x_b))
+
             # decode (cross domain)
             if self.do_a2b_conf:
                 x_ab_s.append(self.gen_a2b_s[i].decode(c_a_s[i], s_b, x_a))
             if self.do_b2a_conf:
                 x_ba_s.append(self.gen_b2a_s[i].decode(c_b_s[i], s_a, x_b))
 
-
-
             if hyperparameters['mask_zero_or_one_w'] != 0 or hyperparameters['mask_total_w'] != 0:
                 if self.do_a2b_conf:
                     mask_ab_s.append(self.gen_a2b_s[i].dec.mask_s)
                 if self.do_b2a_conf:
                     mask_ba_s.append(self.gen_b2a_s[i].dec.mask_s)
+
             # encode again
             if hyperparameters['recon_s_w'] != 0 or hyperparameters['recon_c_w'] != 0 or hyperparameters['recon_x_cyc_w'] != 0:
                 if not self.do_a2b_conf and not self.do_b2a_conf:
@@ -391,6 +365,7 @@ class Council_Trainer(nn.Module):
                     s_a_recon_s.append(s_a_recon)
                     c_a_recon_s.append(c_a_recon)
                     s_b_recon_s.append(s_b_recon)
+
             # decode again (if needed)
             if hyperparameters['recon_x_cyc_w'] != 0:
                 if not self.do_a2b_conf and not self.do_b2a_conf:
@@ -409,65 +384,6 @@ class Council_Trainer(nn.Module):
                 self.loss_gen_mask_TV_ba_s.append(0)
                 self.loss_gen_mask_total_ba_s.append(0)
 
-
-
-
-            # TODO test
-            import torchvision
-
-            if hyperparameters['compare_transform_consistency']:
-                #  transform the image and then pass through the net work,
-                #  then compare the result to the transformed output when the input was not transformed
-                angle = (random.random()-0.5)*45
-                shift = [0, 0, (random.random()-0.5)*50, (random.random()-0.5)*50]
-                if self.do_a2b_conf:
-                    x_a_rot = x_a.cpu()
-                    x_a_rot = ndimage.rotate(input=x_a_rot, angle=angle, axes=(2, 3), reshape=False)
-                    x_a_rot = ndimage.shift(input=x_a_rot, shift=shift)
-                    x_a_rot = torch.tensor(x_a_rot).cuda()
-                    x_a_rot = torchvision.transforms.functional.affine(degrees=angle,translate=shift)(x_a_rot)
-
-                    c_a_rot, _ = self.gen_a2b_s[i].encode(x_a_rot)
-                    rot_a2b = self.gen_a2b_s[i].decode(c_a_rot, s_b, x_a_rot)
-                    a2b_rot = x_ab_s[i].detach().cpu()
-                    a2b_rot = ndimage.rotate(input=a2b_rot, angle=angle, axes=(2, 3), reshape=False)
-                    a2b_rot = ndimage.shift(input=a2b_rot, shift=shift)
-                    a2b_rot = torch.tensor(a2b_rot).cuda()
-
-                    self.loss_gen_total_s[i] += self.council_basic_criterion_with_color(rot_a2b, a2b_rot)
-
-                if self.do_b2a_conf:
-                    x_b_rot = x_b.cpu()
-                    x_b_rot = ndimage.rotate(input=x_b_rot, angle=angle, axes=(2, 3), reshape=False)
-                    x_b_rot = ndimage.shift(input=x_b_rot, shift=shift)
-                    x_b_rot = torch.tensor(x_b_rot).cuda()
-
-                    c_b_rot, _ = self.gen_b2a_s[i].encode(x_b_rot)
-                    rot_b2a = self.gen_b2a_s[i].decode(c_b_rot, s_a, x_b_rot)
-                    b2a_rot = x_ba_s[i].detach().cpu()
-
-                    b2a_rot = ndimage.rotate(input=b2a_rot, angle=angle, axes=(2, 3), reshape=False)
-                    b2a_rot = ndimage.shift(input=b2a_rot, shift=shift)
-                    b2a_rot = torch.tensor(b2a_rot).cuda()
-
-                    # b2a_rot = torchvision.transforms.ToPILImage()(b2a_rot.cpu())
-                    # b2a_rot = torchvision.transforms.functional.affine(Img=b2a_rot, angle=angle,translate=shift, scale=1, shear=(0,0))
-
-
-
-
-                    self.loss_gen_total_s[i] += 1 * self.council_basic_criterion_with_color(rot_b2a, b2a_rot)
-
-                    # import torchvision # TODO DEL
-                    # torchvision.utils.save_image(x_b.cpu(),'./test1234_in.png') # TODO DEL
-                    # torchvision.utils.save_image(rot_b2a,'./test1234_rot_befor.png') # TODO DEL
-                    # torchvision.utils.save_image(b2a_rot,'./test1234_rot_after.png') # TODO DEL
-                    # print('DEl') # TODO DEL
-
-
-
-
-
             # masks should contain ones or zeros
             if hyperparameters['iteration'] > hyperparameters['focus_loss']['focus_loss_start_at_iter'] and (hyperparameters['mask_zero_or_one_w'] != 0 or hyperparameters['mask_total_w'] != 0 ):
 
@@ -478,7 +394,6 @@ class Council_Trainer(nn.Module):
                         self.loss_gen_mask_zero_one_ba_s.append(self.mask_zero_one_criterion(mask_ba_s[i], center=hyperparameters['focus_loss']['mask_zero_or_one_center'], epsilon=hyperparameters['focus_loss']['mask_zero_or_one_epsilon']))
 
                     if self.do_w_loss_matching_focus:
-                        print('===== 1 =====')
                         if hyperparameters['do_a2b']:
                             self.los_hist_focus_zero_one_a2b_s[i].append(self.loss_gen_mask_zero_one_ab_s[i].detach().cpu().numpy())
                             self.los_hist_focus_zero_one_a2b_s[i].popleft()
@@ -491,9 +406,6 @@ class Council_Trainer(nn.Module):
                             self.w_match_focus_zero_one_b2a_conf = np.mean(self.los_hist_gan_b2a_s[i]) / np.mean(self.los_hist_focus_zero_one_b2a_s[i])
                             self.loss_gen_mask_zero_one_ba_s[i] *= self.w_match_focus_zero_one_b2a_conf
                             self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i]
-                        print(self.w_match_focus_zero_one_a2b_conf)
-                        print(self.w_match_focus_zero_one_b2a_conf)
-                        print('===== 2 =====')
                     else:
                         if hyperparameters['do_a2b']:
                             self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ab_s[i]
@@ -517,7 +429,6 @@ class Council_Trainer(nn.Module):
                         self.loss_gen_total_s[i] += hyperparameters['mask_tv_w'] * self.loss_gen_mask_TV_ba_s[i]
 
                 if self.do_w_loss_matching_focus:
-                    print('===== 3 =====')
                     if hyperparameters['do_a2b']:
                         self.los_hist_focus_a2b_s[i].append(self.loss_gen_mask_total_ab_s[i].detach().cpu().numpy())
                         self.los_hist_focus_a2b_s[i].popleft()
@@ -530,9 +441,7 @@ class Council_Trainer(nn.Module):
                         self.w_match_focus_b2a_conf = np.mean(self.los_hist_gan_b2a_s[i]) / np.mean(self.los_hist_focus_b2a_s[i])
                         self.loss_gen_mask_total_ba_s[i] *= self.w_match_focus_b2a_conf
                         self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ba_s[i]
-                    print(self.w_match_focus_a2b_conf)
-                    print(self.w_match_focus_b2a_conf)
-                    print('===== 4 =====')
+
                 else:
                     if hyperparameters['do_a2b']:
                         self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ab_s[i]
@@ -639,10 +548,8 @@ class Council_Trainer(nn.Module):
             else not hyperparameters['council']['flipOnOff_start_with']
 
         if not hyperparameters['council']['flipOnOff']:
-            # self.do_council_loss = hyperparameters['council']['flipOnOff_start_with']
             self.do_council_loss = True
         if hyperparameters['iteration'] < hyperparameters['council']['council_start_at_iter']:
-
             self.do_council_loss = False
         self.council_loss_ba_s = []
         self.council_loss_ab_s = []
@@ -654,7 +561,6 @@ class Council_Trainer(nn.Module):
                     self.council_loss_ab_s.append(0)
                 if self.do_b2a_conf:
                     self.council_loss_ba_s.append(0)
-
 
                 if self.do_dis_council:  # do council discriminator
                     if hyperparameters['do_a2b']:
@@ -733,24 +639,15 @@ class Council_Trainer(nn.Module):
         return torch.mean((self.instancenorm(img_fea) - self.instancenorm(target_fea)) ** 2)
 
     def sample(self, x_a=None, x_b=None, s_a=None, s_b=None, council_member_to_sample_vec=None, return_mask=True):
-        # council_member_to_sample_vec = list of indexes of council members to sample with
         self.eval()
-        gt_x_a = torch.unsqueeze(x_a[:, -1, :, :], 1).repeat(1, 4, 1, 1) / 4  # this is for BraTS dataset
-        gt_x_b = torch.unsqueeze(x_b[:, -1, :, :], 1).repeat(1, 4, 1, 1) / 4  # this is for BraTS dataset
-        x_a = x_a[:, :-1, :, :] if x_a.shape[1] == self.hyperparameters['input_dim_a'] + 1 else x_a  # this is for BraTS dataset
-        x_b = x_b[:, :-1, :, :] if x_b.shape[1] == self.hyperparameters['input_dim_b'] + 1 else x_b  # this is for BraTS dataset
-
         if self.do_a2b_conf:
             x_a_s = []
-            gt_x_a_s = []
             s_b = self.s_b if s_b is None else s_b
             s_b1 = Variable(s_b)
             s_b2 = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
             x_a_recon, x_ab1, x_ab2, x_ab1_mask = [], [], [], []
         if self.do_b2a_conf:
             x_b_s = []
-            gt_x_b_s = []
-
             s_a = self.s_a if s_a is None else s_a
             s_a1 = Variable(s_a)
             s_a2 = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda())
@@ -762,7 +659,6 @@ class Council_Trainer(nn.Module):
             for j in council_member_to_sample_vec:
                 if self.do_b2a_conf:
                     x_b_s.append(x_b[i].unsqueeze(0))
-                    gt_x_b_s.append(gt_x_b[i].unsqueeze(0))
                     c_b, s_b_fake = self.gen_b2a_s[j].encode(x_b[i].unsqueeze(0))
                     if not return_mask:
                         x_b_recon.append(self.gen_b2a_s[j].decode(c_b, s_b_fake, x_b[i].unsqueeze(0)))
@@ -775,8 +671,6 @@ class Council_Trainer(nn.Module):
                         x_ba2.append(self.gen_b2a_s[j].decode(c_b, s_a2[i].unsqueeze(0), x_b[i].unsqueeze(0)))
                 if self.do_a2b_conf:
                     x_a_s.append(x_a[i].unsqueeze(0))
-                    gt_x_a_s.append(gt_x_a[i].unsqueeze(0))
-
                     c_a, s_a_fake = self.gen_a2b_s[j].encode(x_a[i].unsqueeze(0))
                     if not return_mask:
                         x_a_recon.append(self.gen_a2b_s[j].decode(c_a, s_a_fake, x_a[i].unsqueeze(0)))
@@ -797,7 +691,6 @@ class Council_Trainer(nn.Module):
 
         if self.do_b2a_conf:
             x_b_s = torch.cat(x_b_s)
-            gt_x_b_s = torch.cat(gt_x_b_s)
             x_ba1, x_ba2 = torch.cat(x_ba1), torch.cat(x_ba2)
             if not return_mask:
                 x_b_recon = torch.cat(x_b_recon)
@@ -805,7 +698,6 @@ class Council_Trainer(nn.Module):
                 x_ba1_mask = torch.cat(x_ba1_mask)
         if self.do_a2b_conf:
             x_a_s = torch.cat(x_a_s)
-            gt_x_a_s = torch.cat(gt_x_a_s)
             x_ab1, x_ab2 = torch.cat(x_ab1), torch.cat(x_ab2)
             if not return_mask:
                 x_a_recon = torch.cat(x_a_recon)
@@ -814,7 +706,7 @@ class Council_Trainer(nn.Module):
 
         self.train()
 
-        do_diff = True
+        do_diff = False
         if do_diff:
             if self.do_a2b_conf:
                 x_ab1 = x_a_s - x_ab1
@@ -822,16 +714,6 @@ class Council_Trainer(nn.Module):
             if self.do_b2a_conf:
                 x_ba1 = x_b_s - x_ba1
                 x_ba2 = x_b_s - x_ba2
-        do_show_gt = True
-        if do_show_gt: # for BraTS dataset
-            if self.do_a2b_conf:
-                x_ab1 = gt_x_a_s
-                # x_ab1 = gt_x_a.repeat(3, 4, 1, 1) / 4 # / torch.mean(gt_x_a) #* torch.mean(x_ab1)
-            if self.do_b2a_conf:
-                x_ba1 = gt_x_b_s
-
-                # x_ba1 = gt_x_b.repeat(3, 4, 1, 1) / 4 # / torch.mean(gt_x_b) #* torch.mean(x_ba1)
-
 
         if not return_mask:
             if self.do_a2b_conf and self.do_b2a_conf:
@@ -864,11 +746,13 @@ class Council_Trainer(nn.Module):
             i_gen = i
             if hyperparameters['dis']['useRandomGen']:
                 i_gen = np.random.randint(self.council_size)
+
             # encode
             if hyperparameters['do_a2b']:
                 c_a, _ = self.gen_a2b_s[i_gen].encode(x_a)
             if hyperparameters['do_b2a']:
                 c_b, _ = self.gen_b2a_s[i_gen].encode(x_b)
+
             # decode (cross domain)
             if hyperparameters['do_a2b']:
                 x_ab = self.gen_a2b_s[i_gen].decode(c_a, s_b, x_a)
@@ -880,7 +764,6 @@ class Council_Trainer(nn.Module):
                 self.loss_dis_a2b_s.append(self.dis_a2b_s[i].calc_dis_loss(x_ab.detach(), x_b_dis))
             if hyperparameters['do_b2a']:
                 self.loss_dis_b2a_s.append(self.dis_b2a_s[i].calc_dis_loss(x_ba.detach(), x_a_dis))
-
 
             self.loss_dis_total_s.append(0)
             if hyperparameters['do_a2b']:
@@ -912,8 +795,6 @@ class Council_Trainer(nn.Module):
         if not self.do_council_loss or hyperparameters['council_w'] == 0 or hyperparameters['iteration'] < hyperparameters['council']['council_start_at_iter']:
             return
 
-
-
         for dis_council_opt in self.dis_council_opt_s:
             dis_council_opt.zero_grad()
 
@@ -926,7 +807,6 @@ class Council_Trainer(nn.Module):
                 s_a_less = s_a * hyperparameters['council']['discriminetro_less_style_by']
             if self.do_a2b_conf:
                 s_b_less = s_b * hyperparameters['council']['discriminetro_less_style_by']
-
 
         self.loss_dis_council_a2b_s = []
         self.loss_dis_council_b2a_s = []
@@ -970,7 +850,6 @@ class Council_Trainer(nn.Module):
         if self.do_b2a_conf:
             comper_x_ba_s = x_ba_s if hyperparameters['council']['discriminetro_less_style_by'] == 0 else x_ba_s_less
 
-
         for i in range(self.council_size):
             self.loss_dis_council_a2b_s.append(0)
             self.loss_dis_council_b2a_s.append(0)
@@ -1005,7 +884,6 @@ class Council_Trainer(nn.Module):
         for gen_scheduler in self.gen_scheduler_s:
             if gen_scheduler is not None:
                 gen_scheduler.step()
-
         if not self.do_dis_council:
             return
         for dis_council_scheduler in self.dis_council_scheduler_s:
@@ -1026,7 +904,6 @@ class Council_Trainer(nn.Module):
                 if self.do_b2a_conf:
                     state_dict = torch.load(last_model_name.replace('gen_', 'b2a_gen_'))
                     self.gen_b2a_s[i].load_state_dict(state_dict['b2a'])
-
                 iterations = int(last_model_name[-11:-3])
             else:
                 warnings.warn('Failed to find gen checkpoint, did not load model')
@@ -1062,6 +939,7 @@ class Council_Trainer(nn.Module):
                         warnings.warn('Failed to find dis checkpoint, did not load model')
                 except:
                     warnings.warn('some council discriminetor FAILED to load')
+                    
             # Load optimizers
             try:
                 state_dict = torch.load(os.path.join(checkpoint_dir, 'optimizer_' + str(i) + '.pt'))
@@ -1069,23 +947,23 @@ class Council_Trainer(nn.Module):
                 self.gen_opt_s[i].load_state_dict(state_dict['gen'])
                 if self.do_dis_council:
                     self.dis_council_opt_s[i].load_state_dict(state_dict['dis_council'])
+
                 # Reinitilize schedulers
                 self.dis_scheduler_s[i] = get_scheduler(self.dis_opt_s[i], hyperparameters, iterations)
                 self.gen_scheduler = get_scheduler(self.gen_opt_s[i], hyperparameters, iterations)
                 if self.do_dis_council:
-                    self.dis_council_scheduler_s[i] = get_scheduler(self.dis_council_opt_s[i], hyperparameters,
-                                                                    iterations)
+                    self.dis_council_scheduler_s[i] = get_scheduler(self.dis_council_opt_s[i], hyperparameters, iterations)
             except:
                 warnings.warn('some optimizer FAILED to load ')
         if iterations > 0 :
             print('Resume from iteration %d' % iterations)
         else:
             warnings.warn('FAILED TO RESUME STARTED FROM 0')
-
         return iterations
 
     def save(self, snapshot_dir, iterations):
         for i in range(self.council_size):
+
             # Save generators, discriminators, and optimizers
             gen_name = os.path.join(snapshot_dir, 'gen_' + str(i) + '_%08d.pt' % (iterations + 1))
             dis_name = os.path.join(snapshot_dir, 'dis_' + str(i) + '_%08d.pt' % (iterations + 1))
@@ -1095,12 +973,9 @@ class Council_Trainer(nn.Module):
             if self.do_a2b_conf:
                 torch.save({'a2b': self.gen_a2b_s[i].state_dict()}, gen_name.replace('gen_', 'a2b_gen_'))
                 torch.save({'a2b': self.dis_a2b_s[i].state_dict()}, dis_name.replace('dis_', 'a2b_dis_'))
-
             if self.do_b2a_conf:
-
                 torch.save({'b2a': self.gen_b2a_s[i].state_dict()}, gen_name.replace('gen_', 'b2a_gen_'))
                 torch.save({'b2a': self.dis_b2a_s[i].state_dict()}, dis_name.replace('dis_', 'b2a_dis_'))
-
             if self.do_dis_council:
                 if self.do_a2b_conf:
                     torch.save({'a2b': self.dis_council_a2b_s[i].state_dict()}, dis_council_name.replace('dis_council_', 'a2b_dis_council_'))
@@ -1111,7 +986,4 @@ class Council_Trainer(nn.Module):
             else:
                 torch.save({'gen': self.gen_opt_s[i].state_dict(), 'dis': self.dis_opt_s[i].state_dict()}, opt_name)
 
-
 #%%
-
-

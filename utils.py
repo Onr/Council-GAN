@@ -124,16 +124,11 @@ def get_data_loader_folder(input_folder, batch_size, train, new_size=None,
     transform_list = [transforms.ToTensor(),
                       transforms.Normalize((0.5, 0.5, 0.5),
                                            (0.5, 0.5, 0.5))]
-
     transform_list = [transforms.CenterCrop((new_size))] + transform_list if not train else transform_list
-
     transform_list = [transforms.RandomCrop((height, width))] + transform_list if crop else transform_list
     transform_list = [transforms.Resize(new_size)] + transform_list if new_size is not None else transform_list
-
-
     transform_list = (transform_list + [dim3to1]) if config['input_dim_a'] == 1 and is_data_A else transform_list
     transform_list = (transform_list + [dim3to1]) if config['input_dim_b'] == 1 and not is_data_A else transform_list
-
     if config is not None:
         if config['do_HorizontalFlip']:
             transform_list = [transforms.RandomHorizontalFlip()] + transform_list if train else transform_list
@@ -143,7 +138,6 @@ def get_data_loader_folder(input_folder, batch_size, train, new_size=None,
             ratio_min = eval(config['RandomResizedCrop_ratio_min'])
             transform_list = [transforms.RandomResizedCrop(size=new_size, scale=(config['RandomResizedCrop_scale_min'], config['RandomResizedCrop_scale_max']),
                                                            ratio=(ratio_min, ratio_max))] + transform_list if train else transform_list
-
     if config is not None:
         if config['do_VerticalFlip']:
             transform_list = [transforms.RandomVerticalFlip(p=0.35)] + transform_list if train else transform_list
@@ -154,7 +148,6 @@ def get_data_loader_folder(input_folder, batch_size, train, new_size=None,
                 transform_list = [transforms.ColorJitter(brightness=config['ColorJitter_brightness'], contrast=config['ColorJitter_contrast'], saturation=config['ColorJitter_saturation'], hue=config['ColorJitter_hue'])] + transform_list if train else transform_list
             elif config['do_ColorJitter_B'] and not is_data_A:
                 transform_list = [transforms.ColorJitter(brightness=config['ColorJitter_brightness'], contrast=config['ColorJitter_contrast'], saturation=config['ColorJitter_saturation'], hue=config['ColorJitter_hue'])] + transform_list if train else transform_list
-
         else:
             if config['do_ColorJitter']:
                 transform_list = [transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=config['ColorJitter_hue'])] + transform_list if train else transform_list

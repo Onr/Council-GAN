@@ -58,28 +58,27 @@ torch.backends.cudnn.benchmark = False
 # Setup model and data loader
 train_loader_a, train_loader_b, test_loader_a, test_loader_b = get_all_data_loaders(config)
 
-try:  # TODO tmp find what file are bad
+try:  # TODO tmp find what files are bad
     train_display_images_a = torch.stack([train_loader_a[0].dataset[np.random.randint(train_loader_a[0].__len__())] for _ in range(display_size)]).cuda()
-except:  # TODO tmp find what file are bad
+except:
     train_display_images_a = torch.stack([train_loader_a[0].dataset[np.random.randint(train_loader_a[0].__len__())] for _ in range(display_size)]).cuda()
-try:  # TODO tmp find what file are bad
+try:
     train_display_images_b = torch.stack([train_loader_b[0].dataset[np.random.randint(train_loader_b[0].__len__())] for _ in range(display_size)]).cuda()
-except:  # TODO tmp find what file are bad
+except:
     train_display_images_b = torch.stack([train_loader_b[0].dataset[np.random.randint(train_loader_b[0].__len__())] for _ in range(display_size)]).cuda()
-try:  # TODO tmp find what file are bad
+try:
     test_display_images_a = torch.stack([test_loader_a[0].dataset[np.random.randint(test_loader_a[0].__len__())] for _ in range(display_size)]).cuda()
-except:  # TODO tmp find what file are bad
+except:
     # test_display_images_a = torch.stack([test_loader_a[0].dataset[np.random.randint(test_loader_a[0].__len__())] for _ in range(display_size)]).cuda()
     test_display_images_a = None
-try:  # TODO tmp find what file are bad
+try:
     test_display_images_b = torch.stack([test_loader_b[0].dataset[np.random.randint(test_loader_b[0].__len__())] for _ in range(display_size)]).cuda()
-except:  # TODO tmp find what file are bad
+except:
     test_display_images_b = torch.stack([test_loader_b[0].dataset[np.random.randint(test_loader_b[0].__len__())] for _ in range(display_size)]).cuda()
 
 
 trainer = Council_Trainer(config)
 trainer.cuda()
-
 
 # Setup logger and output folders
 model_name = os.path.splitext(os.path.basename(opts.config))[0]
@@ -135,12 +134,9 @@ if config['misc']['do_telegram_report']:
 
 
     def telegram_command(update, context):
-        # if str(update.message.text) == 'cofig':
-        #     with open(opts.config, 'r') as tmp_conf:
-        #         telegram_bot_send_message(tmp_conf.read())
+
         context.bot.sendMessage(update.message.chat_id, text='enter chat_id in to: ' + confidential_yaml_file_path + ' as:')
         context.bot.sendMessage(update.message.chat_id, text='chat_id: ' + str(update.message.chat_id))
-
 
 
     updater = Updater(token=confidential_conf['bot_token'], use_context=True)
@@ -182,13 +178,11 @@ def test_fid(dataset1, dataset2, iteration, train_writer, name, m1=None, s1=None
                                                                                             cuda=cuda,
                                                                                             dims=dims,
                                                                                             m1=m1, s1=s1)
-    # train_writer = tensorboardX.SummaryWriter(log_directory)
 
     train_writer.add_scalar('FID score/' + name, fid_value, iterations)
 
     print(colored('iteration: ' + str(iteration) + ' ,' + name + ' aprox FID: ' + str(fid_value), color='green', attrs=['underline', 'bold', 'blink', 'reverse']))
-    # with open('./fid_test_res.txt', 'a') as file_save:
-    #     file_save.write('iteration: ' + str(iteration) + ' ,' + name + ' FID: ' + str (fid_value) + '\n')
+
 
     if config['misc']['do_telegram_report']:
         telegram_bot_send_message('iteration: ' + str(iteration) + ' ,' + name + ' aprox FID: ' + str(fid_value))
@@ -235,7 +229,6 @@ try:
                 trainer.dis_update(images_a, images_b, config)
                 dis_iter = 1
 
-
             if config['council']['numberOfCouncil_dis_relative_iteration'] > 0:
                 trainer.dis_council_update(images_a, images_b, config)  # the multiple iterating happens inside dis_council_update
 
@@ -275,7 +268,6 @@ try:
                 for k in tqdm(range(1, config['misc']['test_Fid_num_of_im']), desc='Creating images for tests'):
                     c_ind = np.random.randint(config['council']['council_size'])
                     if config['do_a2b']:
-                        # tmp_images_b = torch.cat((tmp_images_b, (test_loader_b[0].dataset[k].cuda().unsqueeze(0))), 0)
                         tmp_images_a = test_loader_a[0].dataset[k].cuda().unsqueeze(0)
 
                         styles = torch.randn(tmp_images_a.shape[0], config['gen']['style_dim'], 1, 1).cuda()
@@ -285,7 +277,6 @@ try:
                             vutils.save_image(tmp_res_imges_a2b_t, tmp_path_im_a2b + '/' + str(ind_a2b) + '.jpg')
                             ind_a2b += 1
                     if config['do_b2a']:
-                        # tmp_images_a = torch.cat((tmp_images_a, (test_loader_a[0].dataset[k].cuda().unsqueeze(0))), 0)
                         tmp_images_b = test_loader_b[0].dataset[k].cuda().unsqueeze(0)
                         styles = torch.randn(tmp_images_b.shape[0], config['gen']['style_dim'], 1, 1).cuda()
                         tmp_res_imges_b2a = trainer.sample(x_a=None, x_b=tmp_images_b, s_a=styles, s_b=styles)
@@ -334,8 +325,6 @@ try:
                             pickle.dump(s1_1_b2a, f)
                     else:
                         _ = test_fid(dataset_for_fid_A, tmp_path_im_b2a, iterations, train_writer, 'A', m1_1_b2a, s1_1_b2a)
-
-
 
 
             # Write images
@@ -401,9 +390,3 @@ except Exception as e:
     print(colored('Training STOPED!', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
     if config['misc']['do_telegram_report']:
         telegram_bot_send_message('Error Training STOPED!')
-
-
-
-
-
-
