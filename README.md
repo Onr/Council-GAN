@@ -14,8 +14,8 @@ Implementation of our paper Breaking the Cycle - Colleagues are all you need
 
 ![anime_gif](/images/anime_gif.gif)
 
-#### temporery Telegram Bot
-Send image to this ![telegram bot](https://t.me/Council_GAN_bot) and it will send back its female translation
+#### Temporary Telegram Bot
+Send image to this [telegram bot](https://t.me/Council_GAN_bot) and it will send back its female translation
 
 ## Usage
 ### Install requirements
