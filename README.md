@@ -8,9 +8,9 @@ Implementation of our paper Breaking the Cycle - Colleagues are all you need
 
 ![gan_council_overview](/images/gan_council_overview.png)
 
-![glasses_gif](/images/glasses_gif.gif)
-
 ![male2female_gif](/images/m2f_gif.gif)
+
+![glasses_gif](/images/glasses_gif.gif)
 
 ![anime_gif](/images/anime_gif.gif)
 
