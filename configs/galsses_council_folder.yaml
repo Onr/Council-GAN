@@ -28,11 +28,11 @@ vgg_w: 0                      # weight of domain-invariant perceptual loss
 council_w: 12                 # weight of Council loss
 council_abs_w: 0              # weight of Council loss abs between images if you use this loss there should be no need to use the regular council_w as well (with this loss active there will be less or no multimodal output)
 council_abs_gray_scale: False # is set to true the council loss will use the gray scale image not the rgb ones
-mask_zero_or_one_w: 17        # weight of part of the focus loss.controls how much the mask should approach binery values (zeros or ones)
+# focus_loss
 mask_total_w: 350             # weight of the 2nd part of the focus loss. controls how much the mask should be small
+mask_zero_or_one_w: 17        # weight of part of the focus loss.controls how much the mask should approach binery values (zeros or ones)
 mask_tv_w: 2 # 1.8
-
-focus_loss:
+focus_loss:                   # more variables for focus_loss
   mask_zero_or_one_center: 0.5
   mask_zero_or_one_epsilon: 0.01
   mask_small_use_abs: False
@@ -166,6 +166,3 @@ misc:
 
 
 compare_transform_consistency: False # TODO
-
-
-
