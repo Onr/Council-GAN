@@ -1,4 +1,4 @@
-name: GAN-Council-env
+name: Council-GAN-env
 channels:
   - anaconda
   - pytorch
