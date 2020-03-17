@@ -1,5 +1,5 @@
 # Council-GAN
-Implementation of our paper Breaking the Cycle - Colleagues are all you need 
+Implementation of our paper Breaking the Cycle - Colleagues are all you need (CVPR 2020)
 ### Paper
 [Ori Nizan](https://onr.github.io/) , [Ayellet Tal](http://webee.technion.ac.il/~ayellet/),
 **[Breaking the Cycle - Colleagues are all you need](https://arxiv.org/abs/1911.10538 "Breaking the cycle -- Colleagues are all you need")**
@@ -14,6 +14,8 @@ Implementation of our paper Breaking the Cycle - Colleagues are all you need
 
 ![anime_gif](/images/anime_gif.gif)
 
+#### Temporary Telegram Bot
+Send image to this [telegram bot](https://t.me/Council_GAN_bot) and it will send back its female translation
 
 ## Usage
 ### Install requirements
