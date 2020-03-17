@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import os
 import random
-import threading
+import threading 
 from multiprocessing.pool import ThreadPool
 import warnings
 from collections import deque
@@ -939,7 +939,7 @@ class Council_Trainer(nn.Module):
                         warnings.warn('Failed to find dis checkpoint, did not load model')
                 except:
                     warnings.warn('some council discriminetor FAILED to load')
-                    
+
             # Load optimizers
             try:
                 state_dict = torch.load(os.path.join(checkpoint_dir, 'optimizer_' + str(i) + '.pt'))

@@ -40,8 +40,11 @@ use_face_locations = True
 
 if use_face_locations:
     from PIL import Image
-    import face_recognition
-
+    try:
+        import face_recognition
+    except:
+        warnings.warn("Filed to import face_recognition, setting use_face_locations to FALSE")
+        use_face_locations = False
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='configs/edges2handbags_folder', help='Path to the config file.')
