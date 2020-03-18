@@ -29,7 +29,7 @@ parser.add_argument('--output_folder', type=str, help="output image folder")
 parser.add_argument('--output_path', type=str, default='outputs', help="outputs path")
 
 parser.add_argument('--checkpoint', type=str, help="checkpoint of autoencoders")
-parser.add_argument('--b2a', action='store_true', help=" whether to run b2a defult a2b")
+parser.add_argument('--a2b', type=int, default=1, help="1 for a2b 0 for b2a")
 parser.add_argument('--seed', type=int, default=1, help="random seed")
 parser.add_argument('--num_style',type=int, default=10, help="number of styles to sample")
 parser.add_argument('--output_only', action='store_true', help="whether only save the output images or also save the input images")
@@ -44,7 +44,7 @@ torch.cuda.manual_seed(opts.seed)
 
 # Load experiment setting
 config = get_config(opts.config)
-input_dim = config['input_dim_a'] if not opts.b2a else config['input_dim_b']
+input_dim = config['input_dim_a'] if opts.a2b else config['input_dim_b']
 council_size = config['council']['council_size']
 
 
@@ -52,7 +52,7 @@ council_size = config['council']['council_size']
 image_names = ImageFolder(opts.input_folder, transform=None, return_paths=True)
 if not 'new_size_a' in config.keys():
     config['new_size_a'] = config['new_size']
-is_data_A = not opts.b2a
+is_data_A = opts.a2b
 data_loader = get_data_loader_folder(opts.input_folder, 1, False,\
                                      new_size=config['new_size_a'] if 'new_size_a' in config.keys() else config['new_size'],\
                                      crop=False, config=config, is_data_A=is_data_A)
@@ -63,7 +63,7 @@ trainer = Council_Trainer(config)
 only_one = False
 if 'gen_' in opts.checkpoint[-21:]:
     state_dict = torch.load(opts.checkpoint)
-    if not opts.b2a:
+    if opts.a2b:
         trainer.gen_a2b_s[0].load_state_dict(state_dict['a2b'])
     else:
         trainer.gen_b2a_s[0].load_state_dict(state_dict['b2a'])
@@ -71,7 +71,7 @@ if 'gen_' in opts.checkpoint[-21:]:
     only_one = True
 else:
     for i in range(council_size):
-        if not opts.b2a:
+        if opts.a2b:
             tmp_checkpoint = opts.checkpoint[:-8] + 'a2b_gen_' + str(i) + '_' + opts.checkpoint[-8:] + '.pt'
             state_dict = torch.load(tmp_checkpoint)
             trainer.gen_a2b_s[i].load_state_dict(state_dict['a2b'])

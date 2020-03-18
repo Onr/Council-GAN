@@ -53,7 +53,7 @@ parser.add_argument('--output_folder', type=str, help="output image folder")
 parser.add_argument('--output_path', type=str, default='.outputs', help="outputs path")
 
 parser.add_argument('--checkpoint', type=str, help="checkpoint of autoencoders")
-parser.add_argument('--b2a', action='store_true', help=" whether to run b2a defult a2b")
+parser.add_argument('--a2b', type=int, default=1, help="1 for a2b 0 for b2a")
 parser.add_argument('--seed', type=int, default=1, help="random seed")
 parser.add_argument('--num_style',type=int, default=10, help="number of styles to sample")
 parser.add_argument('--output_only', action='store_true', help="whether only save the output images or also save the input images")
@@ -71,20 +71,20 @@ torch.cuda.manual_seed(opts.seed)
 
 # Load experiment setting
 config = get_config(opts.config)
-input_dim = config['input_dim_a'] if not opts.b2a else config['input_dim_b']
+input_dim = config['input_dim_a'] if opts.a2b else config['input_dim_b']
 council_size = config['council']['council_size']
 
 # Setup model and data loader
 if not 'new_size_a' in config.keys():
     config['new_size_a'] = config['new_size']
-is_data_A = not opts.b2a
+is_data_A = opts.a2b
 
 style_dim = config['gen']['style_dim']
 trainer = Council_Trainer(config)
 only_one = False
 if 'gen_' in opts.checkpoint[-21:]:
     state_dict = torch.load(opts.checkpoint, map_location={'cuda:1':'cuda:0'})
-    if not opts.b2a:
+    if opts.a2b:
         trainer.gen_a2b_s[0].load_state_dict(state_dict['a2b'])
     else:
         trainer.gen_b2a_s[0].load_state_dict(state_dict['b2a'])
@@ -106,7 +106,7 @@ trainer.eval()
 
 encode_s = []
 decode_s = []
-if not opts.b2a:
+if opts.a2b:
     for i in range(council_size):
         encode_s.append(trainer.gen_a2b_s[i].encode)  # encode function
         decode_s.append(trainer.gen_a2b_s[i].decode)  # decode function

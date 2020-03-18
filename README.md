@@ -20,7 +20,7 @@ Send image to this [telegram bot](https://t.me/Council_GAN_bot) and it will send
 ## Usage
 ### Install requirements
 
-    pip install -r pip_requirements.txt 
+    pip install -r pip_requirements.txt
     conda env create -f conda_requirements.yml
 
 ### Downloading the dataset
@@ -31,7 +31,7 @@ Send image to this [telegram bot](https://t.me/Council_GAN_bot) and it will send
 #### Download the celeba glasses removal dataset:
 
     bash ./scripts/download.sh celeba_glasses_removal
-    
+
 #### Download the celeba male to female dataset:
 
     bash ./scripts/download.sh celeba_male2female
@@ -59,30 +59,30 @@ Send image to this [telegram bot](https://t.me/Council_GAN_bot) and it will send
 and change the **data_root** attribute to **./datasets/DATASET_NAME** in the yaml file
 
 ### Training:
-#### Selfie to anime: 
-    python train.py --config configs/anime2face_council_folder.yaml --output_path ./outputs/council_anime2face_256_256 --resume 
+#### Selfie to anime:
+    python train.py --config configs/anime2face_council_folder.yaml --output_path ./outputs/council_anime2face_256_256 --resume
 
 #### Glasses removel:
-    python train.py --config configs/galsses_council_folder.yaml --output_path ./outputs/council_glasses_128_128 --resume 
-    
+    python train.py --config configs/galsses_council_folder.yaml --output_path ./outputs/council_glasses_128_128 --resume
+
 #### Male to female:
-    python train.py --config configs/male2female_council_folder.yaml --output_path ./outputs/male2famle_256_256 --resume 
+    python train.py --config configs/male2female_council_folder.yaml --output_path ./outputs/male2famle_256_256 --resume
 
 
 ### Testing:
 for converting all the images in input_folder using all the members in the council:
 
-    python test_on_folder.py --config configs/anime2face_council_folder.yaml --output_folder ./outputs/council_anime2face_256_256 --checkpoint ./outputs/council_anime2face_256_256/anime2face_council_folder/checkpoints/01000000 --input_folder ./datasets/selfie2anime/testB --b2a
-    
+    python test_on_folder.py --config configs/anime2face_council_folder.yaml --output_folder ./outputs/council_anime2face_256_256 --checkpoint ./outputs/council_anime2face_256_256/anime2face_council_folder/checkpoints/01000000 --input_folder ./datasets/selfie2anime/testB --a2b 0
+
 or using spsified memeber:
 
-    python test_on_folder.py --config configs/anime2face_council_folder.yaml --output_folder ./outputs/council_anime2face_256_256 --checkpoint ./outputs/council_anime2face_256_256/anime2face_council_folder/checkpoints/b2a_gen_3_01000000.pt --input_folder ./datasets/selfie2anime/testB --b2a
-        
+    python test_on_folder.py --config configs/anime2face_council_folder.yaml --output_folder ./outputs/council_anime2face_256_256 --checkpoint ./outputs/council_anime2face_256_256/anime2face_council_folder/checkpoints/b2a_gen_3_01000000.pt --input_folder ./datasets/selfie2anime/testB --a2b 0
+
 #### Test GUI:
 ![gan_council_overview](/images/test_gui.png)
 
-    python test_gui.py --config configs/galsses_council_folder.yaml --checkpoint ./outputs/council_glasses_128_128/galsses_council_folder/checkpoints/a2b_gen_0_00700000.pt
-    
+    python test_gui.py --config configs/galsses_council_folder.yaml --checkpoint ./outputs/council_glasses_128_128/galsses_council_folder/checkpoints/a2b_gen_0_00700000.pt --a2b 1
+
 #### Citation
 ```
 @inproceedings{nizan2020council,
@@ -92,4 +92,3 @@ or using spsified memeber:
   year={2020}
 }
 ```
-
