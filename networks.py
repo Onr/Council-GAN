@@ -16,7 +16,7 @@ except ImportError: # will be 3.x series
 ##################################################################################
 class MsImageDis(nn.Module):
     # Multi-scale discriminator architecture
-    def __init__(self, input_dim, params):
+    def __init__(self, input_dim, params, cuda_device='cuda:0'):
         super(MsImageDis, self).__init__()
         self.prev_real_input = None
         self.n_layer = params['n_layer']
@@ -26,11 +26,13 @@ class MsImageDis(nn.Module):
         self.activ = params['activ']
         self.num_scales = params['num_scales']
         self.pad_type = params['pad_type']
+        self.cuda_device = cuda_device
+
         self.input_dim = input_dim
         self.downsample = nn.AvgPool2d(3, stride=2, padding=[1, 1], count_include_pad=False)
         self.cnns = nn.ModuleList()
         for _ in range(self.num_scales):
-            self.cnns.append(self._make_net())
+            self.cnns.append(self._make_net().cuda(self.cuda_device))
 
     def _make_net(self):
         dim = self.dim
@@ -45,6 +47,7 @@ class MsImageDis(nn.Module):
 
     def forward(self, x):
         outputs = []
+        x = x.cuda(self.cuda_device)
         for model in self.cnns:
             outputs.append(model(x))
             x = self.downsample(x)
@@ -60,8 +63,8 @@ class MsImageDis(nn.Module):
             if self.gan_type == 'lsgan':
                 loss += torch.mean((out0 - 0)**2) + torch.mean((out1 - 1)**2)
             elif self.gan_type == 'nsgan':
-                all0 = Variable(torch.zeros_like(out0.data).cuda(), requires_grad=False)
-                all1 = Variable(torch.ones_like(out1.data).cuda(), requires_grad=False)
+                all0 = Variable(torch.zeros_like(out0.data).cuda(self.cuda_device), requires_grad=False)
+                all1 = Variable(torch.ones_like(out1.data).cuda(self.cuda_device), requires_grad=False)
                 loss += torch.mean(F.binary_cross_entropy(F.sigmoid(out0), all0) +
                                    F.binary_cross_entropy(F.sigmoid(out1), all1))
             elif self.gan_type == 'RelativisticAverageHingeGAN':
@@ -86,7 +89,7 @@ class MsImageDis(nn.Module):
             if self.gan_type == 'lsgan':
                 loss += torch.mean((out0 - 1)**2)  # LSGAN
             elif self.gan_type == 'nsgan':
-                all1 = Variable(torch.ones_like(out0.data).cuda(), requires_grad=False)
+                all1 = Variable(torch.ones_like(out0.data).cuda(self.cuda_device), requires_grad=False)
                 loss += torch.mean(F.binary_cross_entropy(F.sigmoid(out0), all1))
             elif self.gan_type == 'RelativisticAverageHingeGAN':
                 if input_real is not None:
@@ -112,7 +115,7 @@ class MsImageDis(nn.Module):
 ##################################################################################
 class MsImageDisCouncil(nn.Module):
     # Multi-scale discriminator architecture
-    def __init__(self, input_dim, params):
+    def __init__(self, input_dim, params, cuda_device='cuda:0'):
         super(MsImageDisCouncil, self).__init__()
         self.n_layer = params['n_layer']
         self.gan_type = params['gan_type']
@@ -121,6 +124,7 @@ class MsImageDisCouncil(nn.Module):
         self.activ = params['activ']
         self.num_scales = params['num_scales']
         self.pad_type = params['pad_type']
+        self.cuda_device = cuda_device
         self.input_dim = input_dim
         self.downsample = nn.AvgPool2d(3, stride=2, padding=[1, 1], count_include_pad=False)
         self.cnns = nn.ModuleList()
@@ -137,10 +141,12 @@ class MsImageDisCouncil(nn.Module):
             dim *= 2
         cnn_x += [nn.Conv2d(dim, dim, 1, 1, 0)]
         cnn_x += [nn.Conv2d(dim, 1, 1, 1, 0)]
-        cnn_x = nn.Sequential(*cnn_x)
+        cnn_x = nn.Sequential(*cnn_x).cuda(self.cuda_device)
         return cnn_x
 
     def forward(self, x, x_input):
+        x = x.cuda(self.cuda_device)
+        x_input = x_input.cuda(self.cuda_device)
         outputs = []
         for model in self.cnns:
             model_input = torch.cat((x, x_input), 1)
@@ -159,8 +165,8 @@ class MsImageDisCouncil(nn.Module):
             if self.gan_type == 'lsgan':
                 loss += torch.mean((out0 - 0)**2) + torch.mean((out1 - 1)**2)
             elif self.gan_type == 'nsgan':
-                all0 = Variable(torch.zeros_like(out0.data).cuda(), requires_grad=False)
-                all1 = Variable(torch.ones_like(out1.data).cuda(), requires_grad=False)
+                all0 = Variable(torch.zeros_like(out0.data).cuda(self.cuda_device), requires_grad=False)
+                all1 = Variable(torch.ones_like(out1.data).cuda(self.cuda_device), requires_grad=False)
                 loss += torch.mean(F.binary_cross_entropy(F.sigmoid(out0), all0) +
                                    F.binary_cross_entropy(F.sigmoid(out1), all1))
 
@@ -187,7 +193,7 @@ class MsImageDisCouncil(nn.Module):
             if self.gan_type == 'lsgan':
                 loss += torch.mean((out0 - 1)**2) # LSGAN
             elif self.gan_type == 'nsgan':
-                all1 = Variable(torch.ones_like(out0.data).cuda(), requires_grad=False)
+                all1 = Variable(torch.ones_like(out0.data).cuda(self.cuda_device), requires_grad=False)
                 loss += torch.mean(F.binary_cross_entropy(F.sigmoid(out0), all1))
             elif self.gan_type == 'RelativisticAverageHingeGAN':
                 if input_real is not None:
@@ -216,7 +222,7 @@ class MsImageDisCouncil(nn.Module):
 
 class AdaINGen(nn.Module):
     # AdaIN auto-encoder architecture
-    def __init__(self, input_dim, params):
+    def __init__(self, input_dim, params, cuda_device='cuda:0'):
         super(AdaINGen, self).__init__()
         dim = params['dim']
         style_dim = params['style_dim']
@@ -226,44 +232,58 @@ class AdaINGen(nn.Module):
         pad_type = params['pad_type']
         mlp_dim = params['mlp_dim']
         self.do_my_style = params['do_my_style']
+        self.cuda_device = cuda_device
 
         # style encoder
-        self.enc_style = StyleEncoder(4, input_dim, dim, style_dim, norm='none', activ=self.activ, pad_type=pad_type)
+        self.enc_style = StyleEncoder(4, input_dim, dim, style_dim, norm='none', activ=self.activ, pad_type=pad_type).cuda(self.cuda_device)
 
         # content encoder
-        self.enc_content = ContentEncoder(self.n_downsample, n_res, input_dim, dim, 'in', self.activ, pad_type=pad_type)
+        self.enc_content = ContentEncoder(self.n_downsample, n_res, input_dim, dim, 'in', self.activ, pad_type=pad_type).cuda(self.cuda_device)
 
         if self.do_my_style:
-            self.dec = Decoder_V2_atten(n_upsample=self.n_downsample, n_res=n_res, dim=self.enc_content.output_dim + style_dim, output_dim=input_dim, res_norm='in', activ=self.activ, pad_type=pad_type, num_of_mask_dim_to_add=params['num_of_mask_dim_to_add'])
+            self.dec = Decoder_V2_atten(n_upsample=self.n_downsample, n_res=n_res, dim=self.enc_content.output_dim + style_dim, output_dim=input_dim, res_norm='in', activ=self.activ, pad_type=pad_type, num_of_mask_dim_to_add=params['num_of_mask_dim_to_add']).cuda(self.cuda_device)
         else:
-            self.dec = Decoder_V2_atten(self.n_downsample, n_res, self.enc_content.output_dim, input_dim, res_norm='adain', activ=self.activ, pad_type=pad_type, num_of_mask_dim_to_add=params['num_of_mask_dim_to_add'])
+            self.dec = Decoder_V2_atten(self.n_downsample, n_res, self.enc_content.output_dim, input_dim, res_norm='adain', activ=self.activ, pad_type=pad_type, num_of_mask_dim_to_add=params['num_of_mask_dim_to_add']).cuda(self.cuda_device)
 
         # MLP to generate AdaIN parameters or adding sytle my way
         if self.do_my_style:
             self.mlp = MLP(input_dim=style_dim, output_dim=style_dim, dim=mlp_dim, n_blk=3, norm='none',
-                           activ=self.activ)
+                           activ=self.activ).cuda(self.cuda_device)
         else:
             self.mlp = MLP(input_dim=style_dim, output_dim=self.get_num_adain_params(self.dec), dim=mlp_dim, n_blk=3,
-                           norm='none', activ=self.activ)
+                           norm='none', activ=self.activ).cuda(self.cuda_device)
 
     def forward(self, images, return_mask=False):
         # reconstruct an image
+        images = images.cuda(self.cuda_device)
         content, style_fake = self.encode(images)
         if return_mask:
-            images_recon, mask = self.decode(content, style_fake, return_mask)
+            images_recon, mask = self.decode(content=content, style=style_fake, images=images, return_mask=return_mask)
             return images_recon, mask
         else:
-            images_recon = self.decode(content, style_fake, return_mask)
+            images_recon = self.decode(content=content, style=style_fake, images=images, return_mask=return_mask)
             return images_recon
 
-    def encode(self, images):
+    def forward(self, images, style, return_mask=False):
+        # reconstruct an image
+        content, _ = self.encode(images)
+        if return_mask:
+            images_recon, mask = self.decode(content=content, style=style, images=images, return_mask=return_mask)
+            return images_recon, mask
+        else:
+            images_recon = self.decode(content=content, style=style, images=images, return_mask=return_mask)
+            return images_recon
 
+
+    def encode(self, images):
+        images = images.cuda(self.cuda_device)
         # encode an image to its content and style codes
         style_fake = self.enc_style(images)
         content = self.enc_content(images)
         return content, style_fake
 
     def decode(self, content, style, images, return_mask=False):
+        content, style, images = content.cuda(self.cuda_device), style.cuda(self.cuda_device), images.cuda(self.cuda_device)
         # decode content and style codes to an image
         if self.do_my_style:
             style_to_add = self.mlp(style)
@@ -401,7 +421,6 @@ class ResBlocks(nn.Module):
 
 class MLP(nn.Module):
     def __init__(self, input_dim, output_dim, dim, n_blk, norm='none', activ='relu'):
-        output_dim
         super(MLP, self).__init__()
         self.model = []
         self.model += [LinearBlock(input_dim, dim, norm=norm, activation=activ)]
