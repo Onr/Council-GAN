@@ -39,6 +39,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='configs/glasses_folder.yaml', help='Path to the config file.')
 parser.add_argument('--output_path', type=str, default='.outputs', help="outputs path")
 parser.add_argument("--resume", action="store_true")
+parser.add_argument("--cuda_device", type=str, default='cuda', help="gpu to run on")
 opts = parser.parse_args()
 
 
@@ -47,7 +48,7 @@ config = get_config(opts.config)
 max_iter = config['max_iter']
 display_size = config['display_size']
 config['vgg_model_path'] = opts.output_path
-
+config['cuda_device'] = opts.cuda_device
 
 # FOR REPRODUCIBILITY
 torch.manual_seed(config['random_seed'])
@@ -58,27 +59,27 @@ torch.backends.cudnn.benchmark = False
 # Setup model and data loader
 train_loader_a, train_loader_b, test_loader_a, test_loader_b = get_all_data_loaders(config)
 
-try:  # TODO tmp find what files are bad
-    train_display_images_a = torch.stack([train_loader_a[0].dataset[np.random.randint(train_loader_a[0].__len__())] for _ in range(display_size)]).cuda()
-except:
-    train_display_images_a = torch.stack([train_loader_a[0].dataset[np.random.randint(train_loader_a[0].__len__())] for _ in range(display_size)]).cuda()
 try:
-    train_display_images_b = torch.stack([train_loader_b[0].dataset[np.random.randint(train_loader_b[0].__len__())] for _ in range(display_size)]).cuda()
+    train_display_images_a = torch.stack([train_loader_a[0].dataset[np.random.randint(train_loader_a[0].__len__())] for _ in range(display_size)]).cuda(config['cuda_device'])
 except:
-    train_display_images_b = torch.stack([train_loader_b[0].dataset[np.random.randint(train_loader_b[0].__len__())] for _ in range(display_size)]).cuda()
+    train_display_images_a = torch.stack([train_loader_a[0].dataset[np.random.randint(train_loader_a[0].__len__())] for _ in range(display_size)]).cuda(config['cuda_device'])
 try:
-    test_display_images_a = torch.stack([test_loader_a[0].dataset[np.random.randint(test_loader_a[0].__len__())] for _ in range(display_size)]).cuda()
+    train_display_images_b = torch.stack([train_loader_b[0].dataset[np.random.randint(train_loader_b[0].__len__())] for _ in range(display_size)]).cuda(config['cuda_device'])
+except:
+    train_display_images_b = torch.stack([train_loader_b[0].dataset[np.random.randint(train_loader_b[0].__len__())] for _ in range(display_size)]).cuda(config['cuda_device'])
+try:
+    test_display_images_a = torch.stack([test_loader_a[0].dataset[np.random.randint(test_loader_a[0].__len__())] for _ in range(display_size)]).cuda(config['cuda_device'])
 except:
     # test_display_images_a = torch.stack([test_loader_a[0].dataset[np.random.randint(test_loader_a[0].__len__())] for _ in range(display_size)]).cuda()
     test_display_images_a = None
 try:
-    test_display_images_b = torch.stack([test_loader_b[0].dataset[np.random.randint(test_loader_b[0].__len__())] for _ in range(display_size)]).cuda()
+    test_display_images_b = torch.stack([test_loader_b[0].dataset[np.random.randint(test_loader_b[0].__len__())] for _ in range(display_size)]).cuda(config['cuda_device'])
 except:
-    test_display_images_b = torch.stack([test_loader_b[0].dataset[np.random.randint(test_loader_b[0].__len__())] for _ in range(display_size)]).cuda()
+    test_display_images_b = torch.stack([test_loader_b[0].dataset[np.random.randint(test_loader_b[0].__len__())] for _ in range(display_size)]).cuda(config['cuda_device'])
 
+trainer = Council_Trainer(config, config['cuda_device'])
 
-trainer = Council_Trainer(config)
-trainer.cuda()
+trainer.cuda(config['cuda_device'])
 
 # Setup logger and output folders
 model_name = os.path.splitext(os.path.basename(opts.config))[0]
@@ -206,7 +207,7 @@ try:
     while True:
         tmp_train_loader_a, tmp_train_loader_b = (train_loader_a[0], train_loader_b[0])
         for it, (images_a, images_b) in enumerate(zip(tmp_train_loader_a, tmp_train_loader_b)):
-            images_a, images_b = images_a.cuda().detach(), images_b.cuda().detach()
+            images_a, images_b = images_a.cuda(config['cuda_device']).detach(), images_b.cuda(config['cuda_device']).detach()
 
             images_a = images_a[:, :-1, :, :] if images_a.shape[1] == config['input_dim_a'] + 1 else images_a #  this is for BraTS dataset
             images_b = images_b[:, :-1, :, :] if images_b.shape[1] == config['input_dim_b'] + 1 else images_b #  this is for BraTS dataset
@@ -233,7 +234,7 @@ try:
                 trainer.dis_council_update(images_a, images_b, config)  # the multiple iterating happens inside dis_council_update
 
             trainer.gen_update(images_a, images_b, config, iterations)
-            torch.cuda.synchronize()
+            torch.cuda.synchronize(device=config['cuda_device'])
             iterations += 1
 
             # write training stats in log file
@@ -260,25 +261,25 @@ try:
                         os.remove(os.path.join(tmp_path_im_b2a, f1))
 
                 if config['do_a2b']:
-                    tmp_images_a = test_loader_a[0].dataset[0].cuda().unsqueeze(0)
+                    tmp_images_a = test_loader_a[0].dataset[0].cuda(config['cuda_device']).unsqueeze(0)
                 if config['do_b2a']:
-                    tmp_images_b = test_loader_b[0].dataset[0].cuda().unsqueeze(0)
+                    tmp_images_b = test_loader_b[0].dataset[0].cuda(config['cuda_device']).unsqueeze(0)
                 ind_a2b = 0
                 ind_b2a = 0
                 for k in tqdm(range(1, config['misc']['test_Fid_num_of_im']), desc='Creating images for tests'):
                     c_ind = np.random.randint(config['council']['council_size'])
                     if config['do_a2b']:
-                        tmp_images_a = test_loader_a[0].dataset[k].cuda().unsqueeze(0)
+                        tmp_images_a = test_loader_a[0].dataset[k].cuda(config['cuda_device']).unsqueeze(0)
 
-                        styles = torch.randn(tmp_images_a.shape[0], config['gen']['style_dim'], 1, 1).cuda()
+                        styles = torch.randn(tmp_images_a.shape[0], config['gen']['style_dim'], 1, 1).cuda(config['cuda_device'])
                         tmp_res_imges_a2b = trainer.sample(x_a=tmp_images_a, x_b=None, s_a=styles, s_b=styles)
                         tmp_res_imges_a2b = tmp_res_imges_a2b[2][c_ind].unsqueeze(0)
                         for tmp_res_imges_a2b_t in tmp_res_imges_a2b:
                             vutils.save_image(tmp_res_imges_a2b_t, tmp_path_im_a2b + '/' + str(ind_a2b) + '.jpg')
                             ind_a2b += 1
                     if config['do_b2a']:
-                        tmp_images_b = test_loader_b[0].dataset[k].cuda().unsqueeze(0)
-                        styles = torch.randn(tmp_images_b.shape[0], config['gen']['style_dim'], 1, 1).cuda()
+                        tmp_images_b = test_loader_b[0].dataset[k].cuda(config['cuda_device']).unsqueeze(0)
+                        styles = torch.randn(tmp_images_b.shape[0], config['gen']['style_dim'], 1, 1).cuda(config['cuda_device'])
                         tmp_res_imges_b2a = trainer.sample(x_a=None, x_b=tmp_images_b, s_a=styles, s_b=styles)
 
                         tmp_res_imges_b2a = tmp_res_imges_b2a[6][c_ind].unsqueeze(0)

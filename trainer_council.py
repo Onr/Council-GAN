@@ -18,7 +18,7 @@ import torchvision.transforms.functional as TF
 from scipy import ndimage
 
 class Council_Trainer(nn.Module):
-    def __init__(self, hyperparameters):
+    def __init__(self, hyperparameters, cuda_device='cuda:0'):
         super(Council_Trainer, self).__init__()
         lr = hyperparameters['lr']
         # Initiate the networks
@@ -32,6 +32,7 @@ class Council_Trainer(nn.Module):
         self.do_ads_council_loss = hyperparameters['council_abs_w'] != 0
         self.numberOfCouncil_dis_relative_iteration_conf = hyperparameters['council']['numberOfCouncil_dis_relative_iteration']
         self.discriminetro_less_style_by_conf = hyperparameters['council']['discriminetro_less_style_by']
+        self.cuda_device = cuda_device
 
         # all varible with '_conf' at the end will be saved and displayed in tensorboard logs
         self.recon_x_w_conf = hyperparameters['recon_x_w']
@@ -100,23 +101,22 @@ class Council_Trainer(nn.Module):
         for i in range(self.council_size):
             if self.do_a2b_conf:
                 self.gen_a2b_s.append(
-                    AdaINGen(hyperparameters['input_dim_a'], hyperparameters['gen']))  # auto-encoder for domain a2b
+                    AdaINGen(hyperparameters['input_dim_a'], hyperparameters['gen'], cuda_device=self.cuda_device))  # auto-encoder for domain a2b
                 self.dis_a2b_s.append(
-                    MsImageDis(hyperparameters['input_dim_a'], hyperparameters['dis']))  # discriminator for domain a2b
+                    MsImageDis(hyperparameters['input_dim_a'], hyperparameters['dis'], cuda_device=self.cuda_device))  # discriminator for domain a2b
                 if self.do_dis_council:
                     self.dis_council_a2b_s.append(
                         MsImageDisCouncil(hyperparameters['input_dim_a'],
-                                          hyperparameters['dis']))  # council discriminator for domain a2b
+                                          hyperparameters['dis'], cuda_device=self.cuda_device))  # council discriminator for domain a2b
             if self.do_b2a_conf:
                 self.gen_b2a_s.append(
-                    AdaINGen(hyperparameters['input_dim_b'], hyperparameters['gen']))  # auto-encoder for domain b
+                    AdaINGen(hyperparameters['input_dim_b'], hyperparameters['gen'], cuda_device=self.cuda_device))  # auto-encoder for domain b
                 self.dis_b2a_s.append(
-                    MsImageDis(hyperparameters['input_dim_b'], hyperparameters['dis']))  # discriminator for domain b
+                    MsImageDis(hyperparameters['input_dim_b'], hyperparameters['dis'], cuda_device=self.cuda_device))  # discriminator for domain b
                 if self.do_dis_council:
                     self.dis_council_b2a_s.append(#
                         MsImageDisCouncil(hyperparameters['input_dim_b'],
-                                          hyperparameters['dis']))  # discriminator for domain b
-
+                                          hyperparameters['dis'], cuda_device=self.cuda_device))  # discriminator for domain b
 
         self.instancenorm = nn.InstanceNorm2d(512, affine=False)
         self.style_dim = hyperparameters['gen']['style_dim']
@@ -134,9 +134,8 @@ class Council_Trainer(nn.Module):
 
         # fix the noise used in sampling
         display_size = int(hyperparameters['display_size'])
-        self.s_a = torch.randn(display_size, self.style_dim, 1, 1).cuda()
-        self.s_b = torch.randn(display_size, self.style_dim, 1, 1).cuda()
-
+        self.s_a = torch.randn(display_size, self.style_dim, 1, 1).cuda(self.cuda_device)
+        self.s_b = torch.randn(display_size, self.style_dim, 1, 1).cuda(self.cuda_device)
         # Setup the optimizers
         beta1 = hyperparameters['beta1']
         beta2 = hyperparameters['beta2']
@@ -279,8 +278,8 @@ class Council_Trainer(nn.Module):
         self.hyperparameters = hyperparameters
         for gen_opt in self.gen_opt_s:
             gen_opt.zero_grad()
-        s_a = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
-        s_b = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda())
+        s_a = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda(self.cuda_device))
+        s_b = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda(self.cuda_device))
         c_a_s = []
         s_a_prime_s = []
         c_b_s = []
@@ -399,18 +398,18 @@ class Council_Trainer(nn.Module):
                             self.los_hist_focus_zero_one_a2b_s[i].popleft()
                             self.w_match_focus_zero_one_a2b_conf = np.mean(self.los_hist_gan_a2b_s[i]) / np.mean(self.los_hist_focus_zero_one_a2b_s[i])
                             self.loss_gen_mask_zero_one_ab_s[i] *= self.w_match_focus_zero_one_a2b_conf
-                            self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ab_s[i]
+                            self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ab_s[i].cuda(self.cuda_device)
                         if hyperparameters['do_b2a']:
                             self.los_hist_focus_zero_one_b2a_s[i].append(self.loss_gen_mask_zero_one_ba_s[i].detach().cpu().numpy())
                             self.los_hist_focus_zero_one_b2a_s[i].popleft()
                             self.w_match_focus_zero_one_b2a_conf = np.mean(self.los_hist_gan_b2a_s[i]) / np.mean(self.los_hist_focus_zero_one_b2a_s[i])
                             self.loss_gen_mask_zero_one_ba_s[i] *= self.w_match_focus_zero_one_b2a_conf
-                            self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i]
+                            self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i].cuda(self.cuda_device)
                     else:
                         if hyperparameters['do_a2b']:
-                            self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ab_s[i]
+                            self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ab_s[i].cuda(self.cuda_device)
                         if hyperparameters['do_b2a']:
-                            self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i]
+                            self.loss_gen_total_s[i] += hyperparameters['mask_zero_or_one_w'] * self.loss_gen_mask_zero_one_ba_s[i].cuda(self.cuda_device)
 
                 # masks should as small as possible to leave original domain with little changes
                 if hyperparameters['mask_total_w'] != 0:
@@ -434,19 +433,19 @@ class Council_Trainer(nn.Module):
                         self.los_hist_focus_a2b_s[i].popleft()
                         self.w_match_focus_a2b_conf = np.mean(self.los_hist_gan_a2b_s[i]) / np.mean(self.los_hist_focus_a2b_s[i])
                         self.loss_gen_mask_total_ab_s[i] *= self.w_match_focus_a2b_conf
-                        self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ab_s[i]
+                        self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ab_s[i].cuda(self.cuda_device)
                     if hyperparameters['do_b2a']:
                         self.los_hist_focus_b2a_s[i].append(self.loss_gen_mask_total_ab_s[i].detach().cpu().numpy())
                         self.los_hist_focus_b2a_s[i].popleft()
                         self.w_match_focus_b2a_conf = np.mean(self.los_hist_gan_b2a_s[i]) / np.mean(self.los_hist_focus_b2a_s[i])
                         self.loss_gen_mask_total_ba_s[i] *= self.w_match_focus_b2a_conf
-                        self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ba_s[i]
+                        self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ba_s[i].cuda(self.cuda_device)
 
                 else:
                     if hyperparameters['do_a2b']:
-                        self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ab_s[i]
+                        self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ab_s[i].cuda(self.cuda_device)
                     if hyperparameters['do_b2a']:
-                        self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ba_s[i]
+                        self.loss_gen_total_s[i] += hyperparameters['mask_total_w'] * self.loss_gen_mask_total_ba_s[i].cuda(self.cuda_device)
 
 
             # reconstruction loss
@@ -454,24 +453,24 @@ class Council_Trainer(nn.Module):
                 self.loss_gen_recon_x_a_s.append(self.recon_criterion(x_a_recon_s[i], x_a))
                 self.loss_gen_recon_x_b_s.append(self.recon_criterion(x_b_recon_s[i], x_b))
                 self.loss_gen_total_s[i] += hyperparameters['recon_x_w'] * (
-                        self.loss_gen_recon_x_a_s[i] + self.loss_gen_recon_x_b_s[i])
+                        self.loss_gen_recon_x_a_s[i].cuda(self.cuda_device) + self.loss_gen_recon_x_b_s[i].cuda(self.cuda_device))
             if hyperparameters['recon_s_w'] != 0 and self.do_a2b_conf and self.do_b2a_conf:
                 self.loss_gen_recon_s_a_s.append(self.recon_criterion(s_a_recon_s[i], s_a))
                 self.loss_gen_recon_s_b_s.append(self.recon_criterion(s_b_recon_s[i], s_b))
                 self.loss_gen_total_s[i] += hyperparameters['recon_s_w'] * (
-                        self.loss_gen_recon_s_a_s[i] + self.loss_gen_recon_s_b_s[i])
+                        self.loss_gen_recon_s_a_s[i].cuda(self.cuda_device) + self.loss_gen_recon_s_b_s[i].cuda(self.cuda_device))
             if hyperparameters['recon_c_w'] != 0 and self.do_a2b_conf and self.do_b2a_conf:
                 self.loss_gen_recon_c_a_s.append(self.recon_criterion(c_a_recon_s[i], c_a_s[i]))
                 self.loss_gen_recon_c_b_s.append(self.recon_criterion(c_b_recon_s[i], c_b_s[i]))
                 self.loss_gen_total_s[i] += hyperparameters['recon_c_w'] * (
-                        self.loss_gen_recon_c_a_s[i] + self.loss_gen_recon_c_b_s[i])
+                        self.loss_gen_recon_c_a_s[i].cuda(self.cuda_device) + self.loss_gen_recon_c_b_s[i].cuda(self.cuda_device))
             if hyperparameters['recon_x_cyc_w'] != 0 and self.do_a2b_conf and self.do_b2a_conf:
                 self.loss_gen_cycrecon_x_a_s.append(
                     self.recon_criterion(x_aba_s[i], x_a) if hyperparameters['recon_x_cyc_w'] > 0 else 0)
                 self.loss_gen_cycrecon_x_b_s.append(
                     self.recon_criterion(x_bab_s[i], x_b) if hyperparameters['recon_x_cyc_w'] > 0 else 0)
                 self.loss_gen_total_s[i] += hyperparameters['recon_x_cyc_w'] * (
-                        self.loss_gen_cycrecon_x_a_s[i] + self.loss_gen_cycrecon_x_b_s[i])
+                        self.loss_gen_cycrecon_x_a_s[i].cuda(self.cuda_device) + self.loss_gen_cycrecon_x_b_s[i].cuda(self.cuda_device))
             if hyperparameters['abs_beginning_end'] != 0 and self.abs_beginning_end_w_conf > 0.005:
                 if hyperparameters['do_a2b']:
                     self.loss_gen_beginning_end_a_ab_s.append(
@@ -488,9 +487,9 @@ class Council_Trainer(nn.Module):
                 self.abs_beginning_end_w_conf = max(self.abs_beginning_end_w_conf, hyperparameters['abs_beginning_end_minimume'])
 
                 if hyperparameters['do_a2b']:
-                    self.loss_gen_total_s[i] += self.abs_beginning_end_w_conf * self.loss_gen_beginning_end_a_ab_s[i]
+                    self.loss_gen_total_s[i] += self.abs_beginning_end_w_conf * self.loss_gen_beginning_end_a_ab_s[i].cuda(self.cuda_device)
                 if hyperparameters['do_b2a']:
-                    self.loss_gen_total_s[i] += self.abs_beginning_end_w_conf * self.loss_gen_beginning_end_b_ba_s[i]
+                    self.loss_gen_total_s[i] += self.abs_beginning_end_w_conf * self.loss_gen_beginning_end_b_ba_s[i].cuda(self.cuda_device)
 
             # GAN loss
             if hyperparameters['gan_w'] != 0:
@@ -522,9 +521,9 @@ class Council_Trainer(nn.Module):
                         self.los_hist_gan_b2a_s[i].popleft()
 
                 if hyperparameters['do_a2b']:
-                    self.loss_gen_total_s[i] += hyperparameters['gan_w'] * self.loss_gen_adv_a2b_s[i]
+                    self.loss_gen_total_s[i] += hyperparameters['gan_w'] * self.loss_gen_adv_a2b_s[i].cuda(self.cuda_device)
                 if hyperparameters['do_b2a']:
-                    self.loss_gen_total_s[i] += hyperparameters['gan_w'] * self.loss_gen_adv_b2a_s[i]
+                    self.loss_gen_total_s[i] += hyperparameters['gan_w'] * self.loss_gen_adv_b2a_s[i].cuda(self.cuda_device)
 
             # domain-invariant perceptual loss
             if hyperparameters['vgg_w'] != 0:
@@ -533,7 +532,7 @@ class Council_Trainer(nn.Module):
                 self.loss_gen_vgg_b_s.append(
                     self.compute_vgg_loss(self.vgg, x_ab_s[i], x_a) if hyperparameters['vgg_w'] > 0 else 0)
                 self.loss_gen_total_s[i] += hyperparameters['vgg_w'] * (
-                        self.loss_gen_vgg_a_s[i] + self.loss_gen_vgg_b_s[i])
+                        self.loss_gen_vgg_a_s[i].cuda(self.cuda_device) + self.loss_gen_vgg_b_s[i].cuda(self.cuda_device))
 
         # Council loss
         onOffCycle = hyperparameters['council']['flipOnOff_On_iteration'] + hyperparameters['council'][
@@ -612,14 +611,14 @@ class Council_Trainer(nn.Module):
                         else:
                             abs_council_loss_ba = 0
                     if self.do_a2b_conf:
-                        self.council_loss_ab_s[i] += abs_council_loss_ba
+                        self.council_loss_ab_s[i] += abs_council_loss_ba.cuda(self.cuda_device)
                     if self.do_b2a_conf:
-                        self.council_loss_ba_s[i] += abs_council_loss_ab
+                        self.council_loss_ba_s[i] += abs_council_loss_ab.cuda(self.cuda_device)
 
                 if hyperparameters['do_a2b']:
-                    self.loss_gen_total_s[i] += self.council_loss_ab_s[i]
+                    self.loss_gen_total_s[i] += self.council_loss_ab_s[i].cuda(self.cuda_device)
                 if hyperparameters['do_b2a']:
-                        self.loss_gen_total_s[i] += self.council_loss_ba_s[i]
+                        self.loss_gen_total_s[i] += self.council_loss_ba_s[i].cuda(self.cuda_device)
 
             else:
                 if self.do_a2b_conf:
@@ -644,13 +643,13 @@ class Council_Trainer(nn.Module):
             x_a_s = []
             s_b = self.s_b if s_b is None else s_b
             s_b1 = Variable(s_b)
-            s_b2 = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
+            s_b2 = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda(self.cuda_device))
             x_a_recon, x_ab1, x_ab2, x_ab1_mask = [], [], [], []
         if self.do_b2a_conf:
             x_b_s = []
             s_a = self.s_a if s_a is None else s_a
             s_a1 = Variable(s_a)
-            s_a2 = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda())
+            s_a2 = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda(self.cuda_device))
             x_b_recon, x_ba1, x_ba2, x_ba1_mask = [], [], [], []
 
         council_member_to_sample_vec = range(self.council_size) if council_member_to_sample_vec is None else council_member_to_sample_vec
@@ -736,10 +735,10 @@ class Council_Trainer(nn.Module):
         for dis_opt in self.dis_opt_s:
             dis_opt.zero_grad()
         if self.do_a2b_conf:
-            s_b = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda())
+            s_b = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda(self.cuda_device))
             self.loss_dis_a2b_s = []
         if self.do_b2a_conf:
-            s_a = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
+            s_a = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda(self.cuda_device))
             self.loss_dis_b2a_s = []
         self.loss_dis_total_s = []
         for i in range(self.council_size):
@@ -799,9 +798,9 @@ class Council_Trainer(nn.Module):
             dis_council_opt.zero_grad()
 
         if self.do_b2a_conf:
-            s_a = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
+            s_a = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda(self.cuda_device))
         if self.do_a2b_conf:
-            s_b = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda())
+            s_b = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda(self.cuda_device))
         if hyperparameters['council']['discriminetro_less_style_by'] != 0:
             if self.do_b2a_conf:
                 s_a_less = s_a * hyperparameters['council']['discriminetro_less_style_by']
@@ -899,10 +898,10 @@ class Council_Trainer(nn.Module):
                 last_model_name = last_model_name.replace('a2b_gen_', 'gen_').replace('b2a_gen_', 'gen_')
                 print('loading: ' + last_model_name)
                 if self.do_a2b_conf:
-                    state_dict = torch.load(last_model_name.replace('gen_', 'a2b_gen_'))
+                    state_dict = torch.load(last_model_name.replace('gen_', 'a2b_gen_'), map_location=torch.device(self.cuda_device))
                     self.gen_a2b_s[i].load_state_dict(state_dict['a2b'])
                 if self.do_b2a_conf:
-                    state_dict = torch.load(last_model_name.replace('gen_', 'b2a_gen_'))
+                    state_dict = torch.load(last_model_name.replace('gen_', 'b2a_gen_'), map_location=torch.device(self.cuda_device))
                     self.gen_b2a_s[i].load_state_dict(state_dict['b2a'])
                 iterations = int(last_model_name[-11:-3])
             else:
@@ -914,10 +913,10 @@ class Council_Trainer(nn.Module):
                 last_model_name = last_model_name.replace('a2b_dis_', 'dis_').replace('b2a_dis_', 'dis_')
                 print('loading: ' + last_model_name)
                 if self.do_a2b_conf:
-                    state_dict = torch.load(last_model_name.replace('dis_', 'a2b_dis_'))
+                    state_dict = torch.load(last_model_name.replace('dis_', 'a2b_dis_'), map_location=torch.device(self.cuda_device))
                     self.dis_a2b_s[i].load_state_dict(state_dict['a2b'])
                 if self.do_b2a_conf:
-                    state_dict = torch.load(last_model_name.replace('dis_', 'b2a_dis_'))
+                    state_dict = torch.load(last_model_name.replace('dis_', 'b2a_dis_'), map_location=torch.device(self.cuda_device))
                     self.dis_b2a_s[i].load_state_dict(state_dict['b2a'])
             else:
                 warnings.warn('Failed to find dis checkpoint, did not load model')
@@ -930,10 +929,10 @@ class Council_Trainer(nn.Module):
                         last_model_name = last_model_name.replace('a2b_dis_council_', 'dis_council_').replace('b2a_dis_council_', 'dis_council_')
 
                         if self.do_a2b_conf:
-                            state_dict = torch.load(last_model_name.replace('dis_council_', 'a2b_dis_council_'))
+                            state_dict = torch.load(last_model_name.replace('dis_council_', 'a2b_dis_council_'), map_location=torch.device(self.cuda_device))
                             self.dis_council_a2b_s[i].load_state_dict(state_dict['a2b'])
                         if self.do_b2a_conf:
-                            state_dict = torch.load(last_model_name.replace('dis_council_', 'b2a_dis_council_'))
+                            state_dict = torch.load(last_model_name.replace('dis_council_', 'b2a_dis_council_'), map_location=torch.device(self.cuda_device))
                             self.dis_council_b2a_s[i].load_state_dict(state_dict['b2a'])
                     else:
                         warnings.warn('Failed to find dis checkpoint, did not load model')
@@ -942,7 +941,7 @@ class Council_Trainer(nn.Module):
 
             # Load optimizers
             try:
-                state_dict = torch.load(os.path.join(checkpoint_dir, 'optimizer_' + str(i) + '.pt'))
+                state_dict = torch.load(os.path.join(checkpoint_dir, 'optimizer_' + str(i) + '.pt'), map_location=torch.device(self.cuda_device))
                 self.dis_opt_s[i].load_state_dict(state_dict['dis'])
                 self.gen_opt_s[i].load_state_dict(state_dict['gen'])
                 if self.do_dis_council:
