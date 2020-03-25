@@ -69,7 +69,7 @@ if 'gen_' in opts.checkpoint[-21:]:
         else:
             trainer.gen_b2a_s[0].load_state_dict(state_dict['b2a'])
      except:     
-        print('opts.a2b should be set to ' + str(not opts.a2b))
+        print('opts.a2b should be set to ' + str(not opts.a2b) + ' , Or config file could be wrong')
         opts.a2b = not opts.a2b
         if opts.a2b:
             trainer.gen_a2b_s[0].load_state_dict(state_dict['a2b'])
@@ -90,7 +90,8 @@ else:
                 state_dict = torch.load(tmp_checkpoint)
                 trainer.gen_b2a_s[i].load_state_dict(state_dict['b2a'])
         except:
-            print('opts.a2b should be set to ' + str(not opts.a2b))
+            print('opts.a2b should be set to ' + str(not opts.a2b) + ' , Or config file could be wrong')
+            
             opts.a2b = not opts.a2b
             if opts.a2b:
                 tmp_checkpoint = opts.checkpoint[:-8] + 'a2b_gen_' + str(i) + '_' + opts.checkpoint[-8:] + '.pt'
