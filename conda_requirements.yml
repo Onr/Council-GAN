@@ -96,5 +96,4 @@ dependencies:
     - pyqt5==5.14.1
     - pyqt5-sip==12.7.1
     - pyyaml==5.3
-prefix: /home/amirbelder/anaconda3/envs/GAN-Council-env
 
