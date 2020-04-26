@@ -51,10 +51,14 @@ config['vgg_model_path'] = opts.output_path
 config['cuda_device'] = opts.cuda_device
 
 # FOR REPRODUCIBILITY
-torch.manual_seed(config['random_seed'])
-np.random.seed(config['random_seed'])
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
+def seed_torch(seed=1):
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+seed_torch(config['random_seed'])
 
 # Setup model and data loader
 train_loader_a, train_loader_b, test_loader_a, test_loader_b = get_all_data_loaders(config)
@@ -184,13 +188,11 @@ def test_fid(dataset1, dataset2, iteration, train_writer, name, m1=None, s1=None
 
     print(colored('iteration: ' + str(iteration) + ' ,' + name + ' aprox FID: ' + str(fid_value), color='green', attrs=['underline', 'bold', 'blink', 'reverse']))
 
-
     if config['misc']['do_telegram_report']:
         telegram_bot_send_message('iteration: ' + str(iteration) + ' ,' + name + ' aprox FID: ' + str(fid_value))
     if not retun_m1_s1:
         return
     return m1, s1
-
 
 t = time.time()
 dis_iter = 1
@@ -203,7 +205,6 @@ try:
                 telegram_bot_send_document(bot_document_path=opts.config, filename='config.txt')
             except:
                 print('telegram config message send failed')
-
     while True:
         tmp_train_loader_a, tmp_train_loader_b = (train_loader_a[0], train_loader_b[0])
         for it, (images_a, images_b) in enumerate(zip(tmp_train_loader_a, tmp_train_loader_b)):
