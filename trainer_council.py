@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import os
 import random
-import threading 
+import threading
 from multiprocessing.pool import ThreadPool
 import warnings
 from collections import deque
@@ -755,8 +755,11 @@ class Council_Trainer(nn.Module):
             # decode (cross domain)
             if hyperparameters['do_a2b']:
                 x_ab = self.gen_a2b_s[i_gen].decode(c_a, s_b, x_a)
+                x_ab = x_ab if not hyperparameters['dis']['do_Dis_only_gray'] else torch.sum(x_ab.detach(), 1).unsqueeze(1).repeat(1, hyperparameters['input_dim_b'], 1, 1) / hyperparameters['input_dim_b']
+
             if hyperparameters['do_b2a']:
                 x_ba = self.gen_b2a_s[i_gen].decode(c_b, s_a, x_b)
+                x_ba = x_ba if not hyperparameters['dis']['do_Dis_only_gray'] else torch.sum(x_ba.detach(), 1).unsqueeze(1).repeat(1, hyperparameters['input_dim_a'], 1, 1) / hyperparameters['input_dim_a']
 
             # D loss
             if hyperparameters['do_a2b']:
