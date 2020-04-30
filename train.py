@@ -93,7 +93,7 @@ checkpoint_directory, image_directory, log_directory = prepare_sub_folder(output
 config_backup_folder = os.path.join(output_directory, 'config_backup')
 if not os.path.exists(config_backup_folder):
     os.mkdir(config_backup_folder)
-shutil.copy(opts.config, os.path.join(config_backup_folder, 'config_backup_ ' + str(datetime.datetime.now())[:19] + '.yaml'))  # copy config file to output folder
+shutil.copy(opts.config, os.path.join(config_backup_folder, ('config_backup_' + str(datetime.datetime.now())[:19] + '.yaml').replace(' ', '_'))  # copy config file to output folder
 
 
 m1_1_a2b, s1_1_a2b, m1_1_b2a, s1_1_b2a = None, None, None, None # save statisices for the fid calculation
