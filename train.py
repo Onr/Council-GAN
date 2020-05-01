@@ -12,6 +12,7 @@ import torch.nn.functional as F
 from scipy.stats import entropy
 from torch import nn
 import datetime
+import random
 
 
 from trainer_council import Council_Trainer
@@ -93,7 +94,7 @@ checkpoint_directory, image_directory, log_directory = prepare_sub_folder(output
 config_backup_folder = os.path.join(output_directory, 'config_backup')
 if not os.path.exists(config_backup_folder):
     os.mkdir(config_backup_folder)
-shutil.copy(opts.config, os.path.join(config_backup_folder, ('config_backup_' + str(datetime.datetime.now())[:19] + '.yaml').replace(' ', '_'))  # copy config file to output folder
+shutil.copy(opts.config, os.path.join(config_backup_folder, ('config_backup_' + str(datetime.datetime.now())[:19] + '.yaml').replace(' ', '_')))  # copy config file to output folder
 
 
 m1_1_a2b, s1_1_a2b, m1_1_b2a, s1_1_b2a = None, None, None, None # save statisices for the fid calculation
@@ -114,66 +115,70 @@ if config['misc']['start_tensor_board']:
     print(colored('tensorboard board launched at http://127.0.0.1:' + str(port), color='yellow', attrs=['underline', 'bold', 'blink', 'reverse']))
 train_writer = tensorboardX.SummaryWriter(log_directory, purge_step=iterations)
 
-if config['misc']['do_telegram_report']:
+if config['misc']['do_telegram_report']:           
     import telegram
     from telegram.ext import Updater, MessageHandler, Filters
+    in_ = ''
 
     confidential_yaml_file_path = './confidential_do_not_upload_to_github.yaml'
     if not os.path.exists(confidential_yaml_file_path):
-        with open(confidential_yaml_file_path, 'w') as confidential_yaml_file:
-            confidential_yaml_file.write('bot_token: xxxx\n')
-            confidential_yaml_file.write('chat_id: xxxx')
-        print(colored('Create a telegram bot. this is done by: \n1) downloding and signing into telegram.  \n2) starting a chat with \"BotFather\" \n3) send \"BotFather\" the text "/newbot", then follow the "BotFather" instraction to creat the bot \n4)when you are done you will recive a the new bot token. enter the token into the file: "' + confidential_yaml_file_path + 'which was create in the currnt directory', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
-        print('==== You can turn telegram report OFF from the config.yaml file ====')
-        input('when you are done press ENTER')
+        
+        in_ = input(colored('do_telegram_report is set to True If you would like to set up telegram press Enter. If you just Want to continue write \"NO\": \n))
+        if in_.upper() != 'NO':    
+            with open(confidential_yaml_file_path, 'w') as confidential_yaml_file:
+                confidential_yaml_file.write('bot_token: xxxx\n')
+                confidential_yaml_file.write('chat_id: xxxx')
+            print(colored('Create a telegram bot. this is done by: \n1) downloding and signing into telegram.  \n2) starting a chat with \"BotFather\" \n3) send \"BotFather\" the text "/newbot", then follow the "BotFather" instraction to creat the bot \n4)when you are done you will recive a the new bot token. enter the token into the file: "' + confidential_yaml_file_path + 'which was create in the currnt directory', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
+            print('==== You can turn telegram report OFF from the config.yaml file ====')
+            input('when you are done press ENTER.')
+            
 
-
-    confidential_conf = get_config(confidential_yaml_file_path)
-
-    while confidential_conf['bot_token'] == 'xxxx':
-        print(colored('TOKEN not defined yet'))
-        print(colored('Create a telegram bot. this is done by 1) downloding and signing into telegram.  \n2) starting a chat with \"BotFather\" \n3) send him the text "/newbot", then follow the "BotFather" instraction to creat the bot \n4)when you are done you will recive a the new bot token. enter the token into the file: "' + confidential_yaml_file_path + 'which was create in the currnt directory', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
-        print('==== You can turn telegram report OFF from the config.yaml file ====')
-        input(colored('when you are done press Enter'))
+    if in_.upper() != 'NO':
         confidential_conf = get_config(confidential_yaml_file_path)
+        while confidential_conf['bot_token'] == 'xxxx':
+            print(colored('TOKEN not defined yet'))
+            print(colored('Create a telegram bot. this is done by 1) downloding and signing into telegram.  \n2) starting a chat with \"BotFather\" \n3) send him the text "/newbot", then follow the "BotFather" instraction to creat the bot \n4)when you are done you will recive a the new bot token. enter the token into the file: "' + confidential_yaml_file_path + 'which was create in the currnt directory', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
+            print('==== You can turn telegram report OFF from the config.yaml file ====')
+            input(colored('when you are done press Enter'))
+            confidential_conf = get_config(confidential_yaml_file_path)
 
 
-    def telegram_command(update, context):
+        def telegram_command(update, context):
 
-        context.bot.sendMessage(update.message.chat_id, text='enter chat_id in to: ' + confidential_yaml_file_path + ' as:')
-        context.bot.sendMessage(update.message.chat_id, text='chat_id: ' + str(update.message.chat_id))
-
-
-    updater = Updater(token=confidential_conf['bot_token'], use_context=True)
-    dispatcher = updater.dispatcher
-    dispatcher.add_handler(MessageHandler(Filters.text, telegram_command))
-    updater.start_polling()
+            context.bot.sendMessage(update.message.chat_id, text='enter chat_id in to: ' + confidential_yaml_file_path + ' as:')
+            context.bot.sendMessage(update.message.chat_id, text='chat_id: ' + str(update.message.chat_id))
 
 
-    while confidential_conf['chat_id'] == 'xxxx':
-        print(colored('CHAT ID is not defined send your telegram bot a random message to get your chat id, then enter it into the file:' + confidential_yaml_file_path, color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
-        print('==== You can turn telegram report OFF from the config.yaml file ====')
-        input('when you are done press Enter')
-        confidential_conf = get_config(confidential_yaml_file_path)
-    updater.stop()
+        updater = Updater(token=confidential_conf['bot_token'], use_context=True)
+        dispatcher = updater.dispatcher
+        dispatcher.add_handler(MessageHandler(Filters.text, telegram_command))
+        updater.start_polling()
 
-    telegram_bot = telegram.Bot(token=confidential_conf['bot_token'])
-    def telegram_bot_send_message(bot_message):
-        try:
-            telegram_bot.send_message(chat_id=confidential_conf['chat_id'], text=config['misc']['telegram_report_add_prefix'] + bot_message)
-        except:
-            print('telegram send_message Failed')
-    def telegram_bot_send_photo(bot_image, caption=None):
-        try:
-            telegram_bot.send_photo(chat_id=confidential_conf['chat_id'], photo=bot_image, caption=config['misc']['telegram_report_add_prefix'] + caption)
-        except:
-            print('telegram send_photo Failed')
 
-    def telegram_bot_send_document(bot_document_path, filename=None):
-        try:
-            telegram_bot.send_document(chat_id=confidential_conf['chat_id'], document=open(bot_document_path, 'rb'), filename=config['misc']['telegram_report_add_prefix'] + filename)
-        except:
-            print('telegram send_document Failed')
+        while confidential_conf['chat_id'] == 'xxxx':
+            print(colored('CHAT ID is not defined send your telegram bot a random message to get your chat id, then enter it into the file:' + confidential_yaml_file_path, color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
+            print('==== You can turn telegram report OFF from the config.yaml file ====')
+            input('when you are done press Enter')
+            confidential_conf = get_config(confidential_yaml_file_path)
+        updater.stop()
+
+        telegram_bot = telegram.Bot(token=confidential_conf['bot_token'])
+        def telegram_bot_send_message(bot_message):
+            try:
+                telegram_bot.send_message(chat_id=confidential_conf['chat_id'], text=config['misc']['telegram_report_add_prefix'] + bot_message)
+            except:
+                print('telegram send_message Failed')
+        def telegram_bot_send_photo(bot_image, caption=None):
+            try:
+                telegram_bot.send_photo(chat_id=confidential_conf['chat_id'], photo=bot_image, caption=config['misc']['telegram_report_add_prefix'] + caption)
+            except:
+                print('telegram send_photo Failed')
+
+        def telegram_bot_send_document(bot_document_path, filename=None):
+            try:
+                telegram_bot.send_document(chat_id=confidential_conf['chat_id'], document=open(bot_document_path, 'rb'), filename=config['misc']['telegram_report_add_prefix'] + filename)
+            except:
+                print('telegram send_document Failed')
 
 def test_fid(dataset1, dataset2, iteration, train_writer, name, m1=None, s1=None, retun_m1_s1=False, batch_size=10, dims=2048, cuda=True):
     import pytorch_fid.fid_score
