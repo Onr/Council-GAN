@@ -186,21 +186,26 @@ if config['misc']['do_telegram_report']:
 def test_fid(dataset1, dataset2, iteration, train_writer, name, m1=None, s1=None, retun_m1_s1=False, batch_size=10, dims=2048, cuda=True):
     import pytorch_fid.fid_score
     fid_paths = [dataset1, dataset2]
-    fid_value, m1, s1 = pytorch_fid.fid_score.calculate_fid_given_paths_save_first_domain_statistic(paths=fid_paths,
-                                                                                            batch_size=batch_size,
-                                                                                            cuda=cuda,
-                                                                                            dims=dims,
-                                                                                            m1=m1, s1=s1)
+    try:
+        fid_value, m1, s1 = pytorch_fid.fid_score.calculate_fid_given_paths_save_first_domain_statistic(paths=fid_paths,
+                                                                                                batch_size=batch_size,
+                                                                                                cuda=cuda,
+                                                                                                dims=dims,
+                                                                                                m1=m1, s1=s1)
 
-    train_writer.add_scalar('FID score/' + name, fid_value, iterations)
+        train_writer.add_scalar('FID score/' + name, fid_value, iterations)
 
-    print(colored('iteration: ' + str(iteration) + ' ,' + name + ' aprox FID: ' + str(fid_value), color='green', attrs=['underline', 'bold', 'blink', 'reverse']))
+        print(colored('iteration: ' + str(iteration) + ' ,' + name + ' aprox FID: ' + str(fid_value), color='green', attrs=['underline', 'bold', 'blink', 'reverse']))
 
-    if config['misc']['do_telegram_report']:
-        telegram_bot_send_message('iteration: ' + str(iteration) + ' ,' + name + ' aprox FID: ' + str(fid_value))
+        if config['misc']['do_telegram_report']:
+            telegram_bot_send_message('iteration: ' + str(iteration) + ' ,' + name + ' aprox FID: ' + str(fid_value))
+    except Exception as e:
+        print(str(e))
+        fid_value, m1, s1 = 0, None, None
     if not retun_m1_s1:
         return
     return m1, s1
+
 
 t = time.time()
 dis_iter = 1
@@ -305,10 +310,11 @@ try:
                     if m1_1_a2b is None or s1_1_a2b is None:
                         print('fid test initialization')
                         m1_1_a2b, s1_1_a2b = test_fid(dataset_for_fid_B, tmp_path_im_a2b, iterations, train_writer, 'B', retun_m1_s1=True, batch_size=10)
-                        with open(tmp_path_a2b_save_stat + '/m1', 'wb') as f:
-                            pickle.dump(m1_1_a2b, f)
-                        with open(tmp_path_a2b_save_stat + '/s1', 'wb') as f:
-                            pickle.dump(s1_1_a2b, f)
+                        if m1_1_a2b is not None and s1_1_a2b is not None:
+                            with open(tmp_path_a2b_save_stat + '/m1', 'wb') as f:
+                                pickle.dump(m1_1_a2b, f)
+                            with open(tmp_path_a2b_save_stat + '/s1', 'wb') as f:
+                                pickle.dump(s1_1_a2b, f)
                     else:
                         _ = test_fid(dataset_for_fid_B, tmp_path_im_a2b, iterations, train_writer, 'B', m1_1_a2b, s1_1_a2b)
 
@@ -325,10 +331,11 @@ try:
                     if m1_1_b2a is None or s1_1_b2a is None:
                         print('fid test initialization')
                         m1_1_b2a, s1_1_b2a = test_fid(dataset_for_fid_A, tmp_path_im_b2a, iterations, train_writer, 'A', retun_m1_s1=True, batch_size=10)
-                        with open(tmp_path_b2a_save_stat + '/m1', 'wb') as f:
-                            pickle.dump(m1_1_b2a, f)
-                        with open(tmp_path_b2a_save_stat + '/s1', 'wb') as f:
-                            pickle.dump(s1_1_b2a, f)
+                        if m1_1_b2a is not None and s1_1_b2a is not None:
+                            with open(tmp_path_b2a_save_stat + '/m1', 'wb') as f:
+                                pickle.dump(m1_1_b2a, f)
+                            with open(tmp_path_b2a_save_stat + '/s1', 'wb') as f:
+                                pickle.dump(s1_1_b2a, f)
                     else:
                         _ = test_fid(dataset_for_fid_A, tmp_path_im_b2a, iterations, train_writer, 'A', m1_1_b2a, s1_1_b2a)
 
