@@ -131,7 +131,12 @@ class ImageFolder(data.Dataset):
     def __getitem__(self, index):
         path = self.imgs[index]
         if not path.endswith('.npy'):
-            img = self.loader(path)
+            try:
+                img = self.loader(path)
+            except Exception as e:
+                print(str(e))
+                del self.imgs[index]
+                self.__getitem__(self, index)
             if self.transform is not None:
                 img = self.transform(img)
         else:  # numpy data input # for brats dataset  # TODO add transforms
