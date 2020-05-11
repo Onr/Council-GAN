@@ -128,7 +128,7 @@ if config['misc']['do_telegram_report']:
             with open(confidential_yaml_file_path, 'w') as confidential_yaml_file:
                 confidential_yaml_file.write('bot_token: xxxx\n')
                 confidential_yaml_file.write('chat_id: xxxx')
-            print(colored('Create a telegram bot. this is done by: \n1) downloding and signing into telegram.  \n2) starting a chat with \"BotFather\" \n3) send \"BotFather\" the text "/newbot", then follow the "BotFather" instraction to creat the bot \n4)when you are done you will recive a the new bot token. enter the token into the file: "' + confidential_yaml_file_path + 'which was create in the currnt directory', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
+            print(colored('Create a telegram bot. this is done by: \n1) downloding and signing into telegram.  \n2) starting a chat with \"BotFather\" \n3) send \"BotFather\" the text "/newbot", then follow the "BotFather" instraction to creat the bot \n4)when you are done you will recive a the new bot token. enter the token into the file: "' + confidential_yaml_file_path + ' which was create in the currnt directory', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
             print('==== You can turn telegram report OFF from the config.yaml file ====')
             input('when you are done press ENTER.')
             
