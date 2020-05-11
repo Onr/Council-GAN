@@ -39,14 +39,8 @@ from random import shuffle, sample
 import numpy as np
 import torch
 from scipy import linalg
-try:
-    from cv2 import imread
-    is_cv2 = True
-except:
-    from scipy.misc import imread
-    is_cv2 = False
+from PIL import Image
 from torch.nn.functional import adaptive_avg_pool2d
-
 try:
     from tqdm import tqdm
 except ImportError:
@@ -67,6 +61,13 @@ parser.add_argument('--dims', type=int, default=2048,
                           'By default, uses pool3 features'))
 parser.add_argument('-c', '--gpu', default='', type=str,
                     help='GPU to use (leave blank for CPU only)')
+
+
+def imread(filename):
+    """
+    Loads an image file into a (height, width, 3) uint8 ndarray.
+    """
+    return np.asarray(Image.open(filename), dtype=np.uint8)[..., :3]
 
 
 def get_activations(files, model, batch_size=50, dims=2048,
@@ -118,8 +119,6 @@ def get_activations(files, model, batch_size=50, dims=2048,
         # Reshape to (n_images, 3, height, width)
         images = images.transpose((0, 3, 1, 2))
         images /= 255
-        images = images if is_cv2 else images[:, ::-1, :,:]
-
 
         batch = torch.from_numpy(images).type(torch.FloatTensor)
         if cuda:
