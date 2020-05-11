@@ -39,8 +39,10 @@ from random import shuffle, sample
 import numpy as np
 import torch
 from scipy import linalg
-from scipy.misc import imread
-# import cv2 as cv
+try:
+    from scipy.misc import imread
+except:
+    from cv2 import imread
 from torch.nn.functional import adaptive_avg_pool2d
 
 try:
