@@ -123,7 +123,7 @@ if config['misc']['do_telegram_report']:
     confidential_yaml_file_path = './confidential_do_not_upload_to_github.yaml'
     if not os.path.exists(confidential_yaml_file_path):
         
-        in_ = input(colored('do_telegram_report is set to True If you would like to set up telegram press Enter. If you just Want to continue write \"NO\": \n))
+        in_ = input(colored('do_telegram_report is set to True If you would like to set up telegram press Enter. If you just Want to continue write \"NO\": \n'))
         if in_.upper() != 'NO':    
             with open(confidential_yaml_file_path, 'w') as confidential_yaml_file:
                 confidential_yaml_file.write('bot_token: xxxx\n')
