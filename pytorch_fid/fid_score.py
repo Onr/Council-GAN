@@ -40,9 +40,11 @@ import numpy as np
 import torch
 from scipy import linalg
 try:
-    from scipy.misc import imread
-except:
     from cv2 import imread
+    is_cv2 = True
+except:
+    from scipy.misc import imread
+    is_cv2 = False
 from torch.nn.functional import adaptive_avg_pool2d
 
 try:
@@ -116,6 +118,8 @@ def get_activations(files, model, batch_size=50, dims=2048,
         # Reshape to (n_images, 3, height, width)
         images = images.transpose((0, 3, 1, 2))
         images /= 255
+        images = images if is_cv2 else images[:, ::-1, :,:]
+
 
         batch = torch.from_numpy(images).type(torch.FloatTensor)
         if cuda:
