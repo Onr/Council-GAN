@@ -218,10 +218,6 @@ try:
         for it, (images_a, images_b) in enumerate(zip(tmp_train_loader_a, tmp_train_loader_b)):
             images_a, images_b = images_a.cuda(config['cuda_device']).detach(), images_b.cuda(config['cuda_device']).detach()
 
-            images_a = images_a[:, :-1, :, :] if images_a.shape[1] == config['input_dim_a'] + 1 else images_a #  this is for BraTS dataset
-            images_b = images_b[:, :-1, :, :] if images_b.shape[1] == config['input_dim_b'] + 1 else images_b #  this is for BraTS dataset
-
-
             print("Iteration: " + str(iterations + 1) + "/" + str(max_iter) + " Elapsed time " + str(time.time()-t)[:5])
             t = time.time()
 
