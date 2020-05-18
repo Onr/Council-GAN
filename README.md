@@ -96,7 +96,7 @@ or using spsified memeber:
 
 
 ### Test GUI:
-    ![gan_council_overview](/images/test_gui.png)
+![gan_council_overview](/images/test_gui.png)
 
 #### test GUI on pretrain model:
 
