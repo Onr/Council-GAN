@@ -10,7 +10,7 @@ FILE=$1
 # year = {2015}
 #}
 if [ $FILE == "celeba_male2female" ]; then
-    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/DataSet/celeba_male2female.zip?dl=0
+    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/CouncilGAN/DataSet/celeba_male2female.zip?dl=0
     ZIP_FILE=./datasets/celeba_male2female.zip
     mkdir -p ./datasets/
     wget -N $URL -O $ZIP_FILE
@@ -18,7 +18,7 @@ if [ $FILE == "celeba_male2female" ]; then
     rm $ZIP_FILE
 
 elif [ $FILE == "celeba_glasses_removal" ]; then
-    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/DataSet/celeba_glasses.zip?dl=0
+    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/CouncilGAN/DataSet/celeba_glasses.zip?dl=0
     ZIP_FILE=./datasets/celeba_glasses.zip
     mkdir -p ./datasets/
     wget -N $URL -O $ZIP_FILE
@@ -39,7 +39,7 @@ elif [ $FILE == "U_GAT_IT_selfie2anime" ]; then
   rm $ZIP_FILE
 
 elif [ $FILE == "pretrain_male_to_female" ]; then
-    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/pretrain/pretrain_m2f.zip?dl=0
+    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/CouncilGAN/pretrain/pretrain_m2f.zip?dl=0
     ZIP_FILE=./pretrain/pretrain_m2f.zip
     mkdir -p ./pretrain/
     wget -N $URL -O $ZIP_FILE
@@ -47,7 +47,7 @@ elif [ $FILE == "pretrain_male_to_female" ]; then
     rm $ZIP_FILE
 
 elif [ $FILE == "pretrain_glasses_removal" ]; then
-    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/pretrain/pretrain_glasses_removal.zip?dl=0
+    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/CouncilGAN/pretrain/pretrain_glasses_removal.zip?dl=0
     ZIP_FILE=./pretrain/pretrain_glasses_removal.zip
     mkdir -p ./pretrain/
     wget -N $URL -O $ZIP_FILE
@@ -55,7 +55,7 @@ elif [ $FILE == "pretrain_glasses_removal" ]; then
     rm $ZIP_FILE
 
 elif [ $FILE == "pretrain_selfie_to_anime" ]; then
-    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/pretrain/pretrain_anime.zip?dl=0
+    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/CouncilGAN/pretrain/pretrain_anime.zip?dl=0
     ZIP_FILE=./pretrain/pretrain_anime.zip
     mkdir -p ./pretrain/
     wget -N $URL -O $ZIP_FILE
@@ -66,3 +66,5 @@ elif [ $FILE == "pretrain_selfie_to_anime" ]; then
 else
     echo "Available arguments are celeba_male2female, celeba_glasses_removal, selfie2anime, pretrain_male_to_female, pretrain_glasses_removal, pretrain_selfie_to_anime."
     exit 1
+
+fi
