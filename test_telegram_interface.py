@@ -125,8 +125,9 @@ from torchvision.utils import save_image
 import time
 
 telegram_res_path = './telegram_tmp'
+if not os.path.exists(telegram_res_path):
+    os.mkdir(telegram_res_path)
 telegram_res_path = os.path.join(telegram_res_path, time.ctime(time.time()))
-
 if not os.path.exists(telegram_res_path):
     os.mkdir(telegram_res_path)
 
