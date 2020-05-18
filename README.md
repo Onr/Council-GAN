@@ -95,8 +95,10 @@ or using spsified memeber:
 
 
 
-#### Test GUI:
-![gan_council_overview](/images/test_gui.png)
+### Test GUI:
+    ![gan_council_overview](/images/test_gui.png)
+
+#### test GUI on pretrain model:
 
     python test_gui.py --config pretrain/m2f/128/male2female_council_folder.yaml --checkpoint pretrain/m2f/128/a2b_gen_0_01000000.pt --a2b 1
 
