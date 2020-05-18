@@ -30,16 +30,39 @@ elif [ $FILE == "celeba_glasses_removal" ]; then
 #  author={Kim, Junho and Kim, Minjae and Kang, Hyeonwoo and Lee, Kwanghee},
 #  journal={arXiv preprint arXiv:1907.10830},
 #  year={2019}
-  elif [ $FILE == "U_GAT_IT_selfie2anime" ]; then
-    URL=https://www.dropbox.com/s/9lz6gwwwyyxpdnn/selfie2anime.zip?dl=0
-    ZIP_FILE=./datasets/selfie2anime.zip
-    mkdir -p ./datasets/
+elif [ $FILE == "U_GAT_IT_selfie2anime" ]; then
+  URL=https://www.dropbox.com/s/9lz6gwwwyyxpdnn/selfie2anime.zip?dl=0
+  ZIP_FILE=./datasets/selfie2anime.zip
+  mkdir -p ./datasets/
+  wget -N $URL -O $ZIP_FILE
+  unzip $ZIP_FILE -d ./datasets/
+  rm $ZIP_FILE
+
+elif [ $FILE == "pretrain_male_to_female" ]; then
+    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/pretrain/pretrain_m2f.zip?dl=0
+    ZIP_FILE=./pretrain/pretrain_m2f.zip
+    mkdir -p ./pretrain/
     wget -N $URL -O $ZIP_FILE
-    unzip $ZIP_FILE -d ./datasets/
+    unzip $ZIP_FILE -d ./pretrain/
     rm $ZIP_FILE
+
+elif [ $FILE == "pretrain_glasses_removal" ]; then
+    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/pretrain/pretrain_glasses_removal.zip?dl=0
+    ZIP_FILE=./pretrain/pretrain_glasses_removal.zip
+    mkdir -p ./pretrain/
+    wget -N $URL -O $ZIP_FILE
+    unzip $ZIP_FILE -d ./pretrain/
+    rm $ZIP_FILE
+
+elif [ $FILE == "pretrain_selfie_to_anime" ]; then
+    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/pretrain/pretrain_anime.zip?dl=0
+    ZIP_FILE=./pretrain/pretrain_anime.zip
+    mkdir -p ./pretrain/
+    wget -N $URL -O $ZIP_FILE
+    unzip $ZIP_FILE -d ./pretrain/
+    rm $ZIP_FILE
+
+
 else
-    echo "Available arguments are celeba_male2female, celeba_glasses_removal, U_GAT_IT_selfie2anime."
+    echo "Available arguments are celeba_male2female, celeba_glasses_removal, selfie2anime, pretrain_male_to_female, pretrain_glasses_removal, pretrain_selfie_to_anime."
     exit 1
-
-
-fi
