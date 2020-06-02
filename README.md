@@ -5,7 +5,7 @@ Implementation of our paper Breaking the Cycle - Colleagues are all you need (CV
 **[Breaking the Cycle - Colleagues are all you need](https://arxiv.org/abs/1911.10538 "Breaking the cycle -- Colleagues are all you need")**
 **[[Project](https://onr.github.io/Council_web/)]**
 
-![gan_council_teaser](/images/paper_teaser.png)
+![gan_council_teaser](/images/paper_teaser_small.png)
 
 ![gan_council_overview](/images/gan_council_overview.png)
 
