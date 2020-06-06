@@ -219,14 +219,16 @@ def telegram_command(update, context):
         random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
         run_net_work(img_path=telegram_image_save_path, entropy=random_entropy, use_face_locations=True)
 
-        in_image_path = os.path.join(telegram_res_path, 'tmp_' + str(run_net_work.counter) + '_in.png')
+        in_image_path = os.path.join(telegram_res_path, 'tmp_in.png')
         with open(in_image_path, 'rb') as in_file:
             context.bot.send_photo(chat_id=update.message.chat_id, photo=in_file, filename=config['misc']['telegram_report_add_prefix'], caption='input')
 
-        out_image_path = os.path.join(telegram_res_path, 'tmp_' + str(run_net_work.counter) + '.png')
+        out_image_path = os.path.join(telegram_res_path, 'tmp.png')
         with open(out_image_path, 'rb') as res_file:
             context.bot.send_photo(chat_id=update.message.chat_id, photo=res_file, filename=config['misc']['telegram_report_add_prefix'], caption='output')
 
+        os.remove(in_image_path)
+        os.remove(out_image_path)
         # context.bot.sendMessage(update.message.chat_id, text='enter chat_id in to: ' + confidential_yaml_file_path + ' as:')
     except Exception as e:
         context.bot.send_message(chat_id=update.message.chat_id, text='Failed')
