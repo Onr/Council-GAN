@@ -39,24 +39,25 @@ elif [ $FILE == "U_GAT_IT_selfie2anime" ]; then
   rm $ZIP_FILE
 
 elif [ $FILE == "pretrain_male_to_female" ]; then
-    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/CouncilGAN/PreTrain/pretrain_m2f.zip?dl=0
-    ZIP_FILE=./pretrain/pretrain_m2f
+    URL="https://onedrive.live.com/download?cid=552378614E6BA583&resid=552378614E6BA583%2119549&authkey=ANzlMZsBQy77urU"
+    ZIP_FILE=./pretrain/pretrain_m2f.zip
+
     mkdir -p ./pretrain/
     wget -N $URL -O $ZIP_FILE
     unzip $ZIP_FILE -d ./pretrain/
     rm $ZIP_FILE
 
 elif [ $FILE == "pretrain_glasses_removal" ]; then
-    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/CouncilGAN/PreTrain/pretrain_glasses_removal.zip?dl=0
-    ZIP_FILE=./pretrain/pretrain_glasses_removal
+    URL="https://onedrive.live.com/download?cid=552378614E6BA583&resid=552378614E6BA583%2119556&authkey=AAjSgID8ia6_Wt8"
+    ZIP_FILE=./pretrain/pretrain_glasses_removal.zip
     mkdir -p ./pretrain/
     wget -N $URL -O $ZIP_FILE
     unzip $ZIP_FILE -d ./pretrain/
     rm $ZIP_FILE
 
 elif [ $FILE == "pretrain_selfie_to_anime" ]; then
-    URL=https://cgm.technion.ac.il/Computer-Graphics-Multimedia/CouncilGAN/PreTrain/pretrain_anime.zip?dl=0
-    ZIP_FILE=./pretrain/pretrain_anime
+    URL="https://onedrive.live.com/download?cid=552378614E6BA583&resid=552378614E6BA583%2119547&authkey=AKnOSvoBu3pwPug"
+    ZIP_FILE=./pretrain/pretrain_anime.zip
     mkdir -p ./pretrain/
     wget -N $URL -O $ZIP_FILE
     unzip $ZIP_FILE -d ./pretrain/
