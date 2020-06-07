@@ -17,7 +17,6 @@ try:
     from itertools import izip as zip
 except ImportError: # will be 3.x series
     pass
-import sys
 import torch
 import os
 from tqdm import tqdm

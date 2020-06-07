@@ -5,36 +5,20 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 from __future__ import print_function
 from utils import get_config, get_data_loader_folder, pytorch03_to_pytorch04
 from trainer_council import Council_Trainer
-from torch import nn
-from scipy.stats import entropy
-import torch.nn.functional as F
+
 import argparse
 from torch.autograd import Variable
-from data import ImageFolder
 import numpy as np
 
-import torchvision.utils as vutils
 import warnings
 
 try:
     from itertools import izip as zip
 except ImportError: # will be 3.x series
     pass
-import sys
+
 import torch
-import os
-from tqdm import tqdm
-import torch.utils.data as data
-import os.path
-import torch
-import cv2
-from PIL import Image
-import time
-from tkinter import Tk
-from tkinter.filedialog import asksaveasfilename
-import os
-import shutil
-from utils import write_2images
+
 
 use_face_locations = True
 # use_face_locations = False

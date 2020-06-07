@@ -56,7 +56,7 @@ elif [ $FILE == "pretrain_glasses_removal" ]; then
     rm $ZIP_FILE
 
 elif [ $FILE == "pretrain_selfie_to_anime" ]; then
-    URL="https://onedrive.live.com/download?cid=552378614E6BA583&resid=552378614E6BA583%2119547&authkey=AKnOSvoBu3pwPug"
+    URL="https://onedrive.live.com/download?cid=552378614E6BA583&resid=552378614E6BA583%2119566&authkey=AIcUuinR_eQPp1c"
     ZIP_FILE=./pretrain/pretrain_anime.zip
     mkdir -p ./pretrain/
     wget -N $URL -O $ZIP_FILE
