@@ -99,8 +99,16 @@ or using spsified memeber:
 
 #### test GUI on pretrain model:
 
+##### male2female
     python test_gui.py --config pretrain/m2f/128/male2female_council_folder.yaml --checkpoint pretrain/m2f/128/a2b_gen_0_01000000.pt --a2b 1
 
+##### glasses Removal
+    python test_gui.py --config pretrain/glasses_removal/128/galsses_council_folder.yaml --checkpoint pretrain/glasses_removal/128/a2b_gen_3_01000000.pt --a2b 1
+    
+##### selfie2anime
+    python test_gui.py --config pretrain/anime/256/anime2face_council_folder.yaml --checkpoint pretrain/anime/256/b2a_gen_3_01000000.pt --a2b 0
+    
+    
 #### Citation
 ```
 @inproceedings{nizan2020council,
