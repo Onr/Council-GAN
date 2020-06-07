@@ -21,7 +21,6 @@ Send image to this [telegram bot](https://t.me/Council_GAN_bot) and it will send
 ## Usage
 ### Install requirements
 
-    pip install -r pip_requirements.txt
     conda env create -f conda_requirements.yml
 
 ### Downloading the dataset

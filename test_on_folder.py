@@ -68,13 +68,13 @@ if 'gen_' in opts.checkpoint[-21:]:
             trainer.gen_a2b_s[0].load_state_dict(state_dict['a2b'])
         else:
             trainer.gen_b2a_s[0].load_state_dict(state_dict['b2a'])
-     except:     
-        print('opts.a2b should be set to ' + str(not opts.a2b) + ' , Or config file could be wrong')
-        opts.a2b = not opts.a2b
-        if opts.a2b:
-            trainer.gen_a2b_s[0].load_state_dict(state_dict['a2b'])
-        else:
-            trainer.gen_b2a_s[0].load_state_dict(state_dict['b2a'])
+    except:
+       print('opts.a2b should be set to ' + str(not opts.a2b) + ' , Or config file could be wrong')
+       opts.a2b = not opts.a2b
+       if opts.a2b:
+           trainer.gen_a2b_s[0].load_state_dict(state_dict['a2b'])
+       else:
+           trainer.gen_b2a_s[0].load_state_dict(state_dict['b2a'])
             
     council_size = 1
     only_one = True
@@ -109,7 +109,7 @@ trainer.eval()
 
 encode_s = []
 decode_s = []
-if not opts.b2a:
+if opts.a2b:
     for i in range(council_size):
         encode_s.append(trainer.gen_a2b_s[i].encode)  # encode function
         decode_s.append(trainer.gen_a2b_s[i].decode)  # decode function

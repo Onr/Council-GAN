@@ -12,16 +12,7 @@ import argparse
 from torch.autograd import Variable
 from data import ImageFolder
 import numpy as np
-from __future__ import print_function
-from utils import get_config, get_data_loader_folder, pytorch03_to_pytorch04
-from trainer_council import Council_Trainer
-from torch import nn
-from scipy.stats import entropy
-import torch.nn.functional as F
-import argparse
-from torch.autograd import Variable
-from data import ImageFolder
-import numpy as np
+
 import torchvision.utils as vutils
 import warnings
 
@@ -102,7 +93,7 @@ if 'gen_' in opts.checkpoint[-21:]:
     only_one = True
 else:
     for i in range(council_size):
-        if not opts.b2a:
+        if opts.a2b:
             tmp_checkpoint = opts.checkpoint[:-8] + 'a2b_gen_' + str(i) + '_' + opts.checkpoint[-8:] + '.pt'
             state_dict = torch.load(tmp_checkpoint, map_location={'cuda:1':'cuda:0'})
             trainer.gen_a2b_s[i].load_state_dict(state_dict['a2b'])
@@ -382,6 +373,8 @@ class App(QWidget):
                 break
             cv2.imshow('press ENTER to stop', frame)
             press_key = cv2.waitKey(1)
+
+
             if press_key & 0xFF == ord('q') or press_key == 27 or press_key == 13:
                 break
 
@@ -623,7 +616,7 @@ if 'gen_' in opts.checkpoint[-21:]:
     only_one = True
 else:
     for i in range(council_size):
-        if not opts.b2a:
+        if opts.a2b:
             tmp_checkpoint = opts.checkpoint[:-8] + 'a2b_gen_' + str(i) + '_' + opts.checkpoint[-8:] + '.pt'
             state_dict = torch.load(tmp_checkpoint, map_location={'cuda:1':'cuda:0'})
             trainer.gen_a2b_s[i].load_state_dict(state_dict['a2b'])
