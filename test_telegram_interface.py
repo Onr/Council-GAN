@@ -5,27 +5,31 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 from __future__ import print_function
 from utils import get_config, get_data_loader_folder, pytorch03_to_pytorch04
 from trainer_council import Council_Trainer
-
 import argparse
 from torch.autograd import Variable
-
+import numpy as np
 try:
     from itertools import izip as zip
 except ImportError: # will be 3.x series
     pass
-
 import os
-
 import os.path
 import torch
 from PIL import Image
+import warnings
 from termcolor import colored
+use_face_locations = True
+
+if use_face_locations:
+    from PIL import Image
+    try:
+        import face_recognition
+    except:
+        warnings.warn("Filed to import face_recognition, setting use_face_locations to FALSE")
+        use_face_locations = False
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--config', type=str, default='configs/edges2handbags_folder', help='Path to the config file.')
-parser.add_argument('--input_folder', type=str, help="input image folder")
-parser.add_argument('--output_folder', type=str, help="output image folder")
-parser.add_argument('--output_path', type=str, default='.outputs', help="outputs path")
+parser.add_argument('--config', type=str, default='configs/anime2face_council_folder.yaml', help='Path to the config file.')
 
 parser.add_argument('--checkpoint', type=str, help="checkpoint of autoencoders")
 parser.add_argument('--a2b', type=int, default=1, help="1 for a2b 0 for b2a")
@@ -61,7 +65,7 @@ else:
 trainer = Council_Trainer(config)
 only_one = False
 if 'gen_' in opts.checkpoint[-21:]:
-    state_dict = torch.load(opts.checkpoint)
+    state_dict = torch.load(opts.checkpoint, map_location=torch.device('cuda:0'))
     if opts.a2b:
         trainer.gen_a2b_s[0].load_state_dict(state_dict['a2b'])
     else:
@@ -78,7 +82,6 @@ else:
             tmp_checkpoint = opts.checkpoint[:-8] + 'b2a_gen_' + str(i) + '_' + opts.checkpoint[-8:] + '.pt'
             state_dict = torch.load(tmp_checkpoint)
             trainer.gen_b2a_s[i].load_state_dict(state_dict['b2a'])
-
 
 trainer.cuda()
 trainer.eval()
@@ -110,54 +113,13 @@ def load_net(checkpoint):
         print(e)
         print('FAILED to load network!')
 
-
-
-from torchvision import transforms
-from torchvision.utils import save_image
-import time
-
 telegram_res_path = './telegram_tmp'
 if not os.path.exists(telegram_res_path):
     os.mkdir(telegram_res_path)
-telegram_res_path = os.path.join(telegram_res_path, time.ctime(time.time()))
-if not os.path.exists(telegram_res_path):
-    os.mkdir(telegram_res_path)
 
 
-# from test_gui import run_net_work
-
-def run_net_work(img_path, entropy, use_face_locations=False):
-    run_net_work.counter += 1
-    out_im_path = os.path.join(telegram_res_path, 'tmp_' + str(run_net_work.counter) + '.png')
-    in_im_path = os.path.join(telegram_res_path, 'tmp_' + str(run_net_work.counter) + '_in.png')
-    height = 128
-    width = 128
-    new_size = 128
-
-
-    img = Image.open(img_path).convert('RGB')
-    mean = torch.tensor([0.5, 0.5, 0.5])
-    std = torch.tensor([0.5, 0.5, 0.5])
-    transform_list = [transforms.ToTensor()
-                      ,transforms.Normalize(mean=mean, std=std)]
-    transform_list = [transforms.CenterCrop((height, width))] + transform_list
-    transform_list = [transforms.Resize(new_size)] + transform_list
-    transform = transforms.Compose(transform_list)
-
-    img = transform(img).unsqueeze(0).cuda()
-    content, _ = encode_s[0](img)
-    res_img = decode_s[0](content, entropy, img).detach().cpu().squeeze(0)
-    res_img = transforms.Normalize(mean=(-mean/std), std=(1.0/std))(res_img)
-    save_image(res_img, out_im_path)
-    in_image = img.detach().cpu().squeeze(0)
-
-    in_image = transforms.Normalize(mean=-mean/std, std=1/std)(in_image)
-    save_image(in_image, in_im_path)
-    return in_im_path, out_im_path
-
+from test_gui import run_net_work
 run_net_work.counter = 0
-
-
 
 import telegram
 from telegram.ext import Updater, MessageHandler, Filters
@@ -174,6 +136,9 @@ if not os.path.exists(confidential_yaml_file_path):
     input('when you are done press Enter')
 confidential_conf = get_config(confidential_yaml_file_path)
 
+if not 'bot_token_test' in confidential_conf.keys():
+    confidential_conf['bot_token_test'] = confidential_conf['bot_token']
+    print('bot_token_test not defined in confidential_do_not_upload_to_github.ymal using bot_token instead')
 while confidential_conf['bot_token_test'] == 'xxxx':
     print(colored('TOKEN not defined yet'))
     print(colored('create a telegram bot using a chat with BotFather and enter its token into ' + confidential_yaml_file_path, color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
@@ -207,25 +172,39 @@ def telegram_command(update, context):
         import urllib.request
         telegram_image_save_path = os.path.join(telegram_res_path, "telegram_recived.jpg")
         urllib.request.urlretrieve(im_url, telegram_image_save_path)
+        number_of_result_to_return = 3
+        move_up_by_ratio_vec = [0.21, 0.2, 0.15, 0.1, 0, -0.05] # celebe
+        face_increes_by_dev_ratio_vec = [1.6, 1.7, 1.8, 2, 2.3, 2.5] # celebe
+        # move_up_by_ratio_vec = [-0.1, 0, 0.1] # anime
+        # face_increes_by_dev_ratio_vec = [2, 2.3, 2.5, 3, 4] # anime
+        run_net_work.counter += 1
+        print(f'number of image prossesed: {run_net_work.counter}')
+        for i in range(number_of_result_to_return):
+            random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
+            # change sample range
+            random_entropy *= 0.9
+            bais = (Variable(torch.randint(low=0, high=2, size=(1, style_dim, 1, 1))).cuda() - 0.5) * 2
+            bais *= 0.2
+            random_entropy = np.random.choice([random_entropy - bais, random_entropy + bais])
 
-        random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
-        run_net_work(img_path=telegram_image_save_path, entropy=random_entropy, use_face_locations=True)
+            move_up_by_ratio = np.random.choice(move_up_by_ratio_vec)
+            face_increes_by_dev_ratio = np.random.choice(face_increes_by_dev_ratio_vec)
+            in_image_path, out_image_path = run_net_work(img_path=telegram_image_save_path,
+                                                         entropy=random_entropy,
+                                                         use_face_locations=True,
+                                                         config=config,
+                                                         face_increes_by_dev_ratio=face_increes_by_dev_ratio,
+                                                         move_up_by_ratio=move_up_by_ratio)
 
-        in_image_path = os.path.join(telegram_res_path, 'tmp_in.png')
-        with open(in_image_path, 'rb') as in_file:
-            context.bot.send_photo(chat_id=update.message.chat_id, photo=in_file, filename=config['misc']['telegram_report_add_prefix'], caption='input')
+            with open(out_image_path, 'rb') as res_file:
+                context.bot.send_photo(chat_id=update.message.chat_id, photo=res_file, filename=config['misc']['telegram_report_add_prefix'], caption='output')
+                # context.bot.send_photo(chat_id=update.message.chat_id, photo=res_file, filename=config['misc']['telegram_report_add_prefix'], caption='output'+ 'face_increes_by_dev_ratio:'+ str(face_increes_by_dev_ratio) + ' move_up_by_ratio:' + str(move_up_by_ratio))
 
-        out_image_path = os.path.join(telegram_res_path, 'tmp.png')
-        with open(out_image_path, 'rb') as res_file:
-            context.bot.send_photo(chat_id=update.message.chat_id, photo=res_file, filename=config['misc']['telegram_report_add_prefix'], caption='output')
-
-        os.remove(in_image_path)
-        os.remove(out_image_path)
-        # context.bot.sendMessage(update.message.chat_id, text='enter chat_id in to: ' + confidential_yaml_file_path + ' as:')
+            os.remove(in_image_path)
+            os.remove(out_image_path)
     except Exception as e:
         context.bot.send_message(chat_id=update.message.chat_id, text='Failed')
         print(e)
-
 
 updater = Updater(token=confidential_conf['bot_token_test'], use_context=True)
 dispatcher = updater.dispatcher
@@ -233,7 +212,7 @@ dispatcher.add_handler(MessageHandler(Filters.photo, telegram_command))
 
 updater.start_polling()
 
-input(colored('telegram bot running - press enter to stop', color='yellow', attrs=['underline', 'bold', 'blink', 'reverse']))
-print(colored('stoping...', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
+input(colored('Telegram bot running - press enter to stop', color='yellow', attrs=['underline', 'bold', 'blink', 'reverse']))
+print(colored('Stoping...', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
 updater.stop()
-print(colored('stoped', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
+print(colored('Stoped', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
