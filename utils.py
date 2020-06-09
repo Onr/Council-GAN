@@ -158,7 +158,7 @@ def get_data_loader_folder(input_folder, batch_size, train, new_size=None,
 
     if config is not None:
         if config['do_RandomRotation']:
-            transform_list = [transforms.RandomRotation(degrees=config['RandomRotation_degree'], expand=True)] + transform_list if train else transform_list
+            transform_list = [transforms.RandomRotation(degrees=config['RandomRotation_degree'], expand=False)] + transform_list if train else transform_list
 
     if config is not None:
         if config['do_RandomAffine']:

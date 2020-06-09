@@ -183,8 +183,9 @@ def telegram_command(update, context):
             random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
             # change sample range
             random_entropy *= 0.9
-            bais = (Variable(torch.randint(low=0, high=2, size=(1, style_dim, 1, 1))).cuda() - 0.5) * 2
+            bais = (Variable(torch.randint(low=0, high=2, size=(1, style_dim, 1, 1))) - 0.5) * 2
             bais *= 0.2
+            bais = bais.type(torch.FloatTensor).cuda()
             random_entropy = np.random.choice([random_entropy - bais, random_entropy + bais])
 
             move_up_by_ratio = np.random.choice(move_up_by_ratio_vec)
