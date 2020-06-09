@@ -542,7 +542,7 @@ class App(QWidget):
 
 
         self.slider_face_increse = Style_Slider(orientation=Qt.Horizontal)
-        self.slider_face_increse.setValue(17)
+        self.slider_face_increse.setValue(20)
         self.slider_face_increse.sliderReleased.connect(self.face_incres_sliderReleased)
         self.slider_face_increse.valueChanged.connect(self.face_incres_sliderReleased)
         self.slider_face_increse.setEnabled(self.use_face_locations)
