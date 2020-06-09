@@ -200,7 +200,6 @@ def telegram_command(update, context):
             with open(out_image_path, 'rb') as res_file:
                 context.bot.send_photo(chat_id=update.message.chat_id, photo=res_file, filename=config['misc']['telegram_report_add_prefix'], caption='output')
                 # context.bot.send_photo(chat_id=update.message.chat_id, photo=res_file, filename=config['misc']['telegram_report_add_prefix'], caption='output'+ 'face_increes_by_dev_ratio:'+ str(face_increes_by_dev_ratio) + ' move_up_by_ratio:' + str(move_up_by_ratio))
-
             os.remove(in_image_path)
             os.remove(out_image_path)
     except Exception as e:

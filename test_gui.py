@@ -341,242 +341,248 @@ def run_net_work(img_path, entropy, config=config, use_face_locations=False, fac
     save_image(in_img, in_im_path)
     return in_im_path, out_im_path
 
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-
-class DropLabel(QLineEdit):
-    def __init__(self, *args, **kwargs):
-        QLabel.__init__(self, *args, **kwargs)
-        self.setAcceptDrops(True)
-        self.setEnabled(True)
-        self.res_im = None
-
-class Style_Slider(QSlider):
-    def __init__(self, *args, **kwargs):
-        QSlider.__init__(self, *args, **kwargs)
-
-class App(QWidget):
-
-    def redraw_in_and_out(self):
-        if self.__dict__.get('img_path') is None:
-            return
-        h = 256
-        w = 256
-        max_added_val = 50
-        random_entropy_direction_mult = (self.slider.value() - self.slider.maximum() / 2) / (self.slider.maximum())
-        random_entropy = self.random_entropy + max_added_val * self.random_entropy_direction * random_entropy_direction_mult
-
-        self.in_im_path, self.res_im_path = run_net_work(img_path=self.img_path, entropy=random_entropy,
-                                                         use_face_locations=self.use_face_locations,
-                                                         face_increes_by_dev_ratio=self.face_increes_by_dev_ratio)
-        self.im_out = QPixmap(self.res_im_path)
-        self.out_image_label.setPixmap(self.im_out.scaled(w, h))
-        self.out_image_label.repaint()
-        self.im_in = QPixmap(self.in_im_path)
-        self.in_image_label.setPixmap(self.im_in.scaled(w, h))
-        self.in_image_label.repaint()
-
-    def sliderReleased(self):
-        self.redraw_in_and_out()
-
-    def face_incres_sliderReleased(self):
-        min_face_range = 0.5
-        max_face_range = 6.5
-        face_slider_range = max_face_range - min_face_range
-        self.face_increes_by_dev_ratio = min_face_range + face_slider_range * self.slider_face_increse.value() / 100
-        self.redraw_in_and_out()
-
-    def dropEvent(self, event):
-        self.img_path = event.mimeData().text()[7:-2]
-        print('prossing image: ' + self.img_path)
-        self.redraw_in_and_out()
-
-    def dropEvent_new_net(self, event):
-        self.net_path = event.mimeData().text()[7:-2]
-        load_net(self.net_path)
-        self.redraw_in_and_out()
-        self.label_net.setText(self.net_path)
-
-    def random_button_pressed(self):
-        self.random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
-        self.random_entropy_direction = Variable(torch.randn(1, style_dim, 1, 1).cuda())
-        self.random_entropy_direction /= torch.norm(self.random_entropy_direction)
-        self.redraw_in_and_out()
-
-    def take_pic_button_pressed(self):
-        if self.live_view_on:
-            self.live_view_on = False
-            return
-        self.pushbutton_take_pic.setText('Press Here to Stop')
-        self.pushbutton_record.setEnabled(True)
-
-        print('press Esc to stop')
-        self.img_path = './cap_tmp_in.png'
-        # cap = cv2.VideoCapture(0)
-        cap = WebcamVideoStream(src=0, width=640, height=480).start()
-        self.live_view_on = True
-        start_time = time.time()
-        while (self.live_view_on):
-            frame = cap.read()
-            # Display the resulting frame
-            if frame is None:
-                break
-            cv2.imshow('press ENTER to stop', frame)
-            press_key = cv2.waitKey(1)
-
-
-            if press_key & 0xFF == ord('q') or press_key == 27 or press_key == 13:
-                break
-
-            stop_time = time.time()
-            duration = stop_time - start_time
-            print('FPS: ' + str(1/duration))
-            start_time = time.time()
-
-            cv2.imwrite(self.img_path, frame)
-            self.redraw_in_and_out()
-
-            if self.do_record_vid:
-                res_img = cv2.imread(self.res_im_path)
-                in_img = cv2.imread(self.in_im_path)
-                to_save_frame = np.concatenate((in_img, res_img), axis=1)
-                self.out_vid.write(to_save_frame)
-        cap.stop()
-
-        cv2.destroyAllWindows()
-        if frame is not None:
-            cv2.imwrite(self.img_path, frame)
-            self.redraw_in_and_out()
-        self.slider.setEnabled(True)
-        self.pushbutton_random_entropy.setEnabled(True)
-        self.label.setEnabled(True)
-        self.pushbutton_take_pic.setEnabled(True)
-        self.label_net.setEnabled(True)
-        self.cb_ft.setEnabled(True)
-        self.pushbutton_record.setEnabled(False)
-
-
-        cv2.imwrite(self.img_path, frame)
-        self.pushbutton_take_pic.setText('live webcam view')
-
-    def save_image_pressed(self):
-        Tk().withdraw()
-        savepath = asksaveasfilename( defaultextension=".png")
-        if savepath is None:
-            return
-        print('saving image to: ' + savepath)
-        shutil.copyfile(self.in_im_path, savepath[:-4] + '_in' + savepath[-4:])
-        shutil.copyfile(self.res_im_path, savepath[:-4] + '_out' + savepath[-4:])
-
-
-    def cb_face_traucker_changed(self,cb):
-        self.use_face_locations = self.cb_ft.isChecked()
-        self.slider_face_increse.setEnabled(self.use_face_locations)
-
-    def record_vid(self):
-        if not self.do_record_vid:
-            self.pushbutton_record.setText('Stop')
-            self.out_vid = cv2.VideoWriter('output_vid.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (2*640, 480))
-            self.do_record_vid = True
-
-        else:
-            self.do_record_vid = False
-            self.pushbutton_record.setText('Record')
-            self.out_vid.release()
-
-
-    def __init__(self):
-        super().__init__()
-        self.title = 'Council GAN example'
-        self.left = 10
-        self.top = 10
-        self.width = 640  # 640
-        self.height = 480  # 480
-        self.layout = QVBoxLayout()
-        self.hbox = QHBoxLayout()
-        self.hbox2 = QHBoxLayout()
-        self.random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
-        self.random_entropy_direction = Variable(torch.randn(1, style_dim, 1, 1).cuda())
-        self.random_entropy_direction /= torch.norm(self.random_entropy_direction)
-        self.res_im_path = None
-        self.use_face_locations = False
-        self.live_view_on = False
-        self.do_record_vid = False
-        self.out_vid = None
-        self.face_increes_by_dev_ratio = 1.5
-        self.layout.addLayout(self.hbox)
-        self.in_image_label = QLabel("in")
-        self.in_image_label.setUpdatesEnabled(True)
-        self.hbox.addWidget(self.in_image_label)
-        self.hbox.addStretch()
-        self.layout.addStretch()
-
-        self.out_image_label = QLabel("out")
-        self.out_image_label.setUpdatesEnabled(True)
-        self.out_image_label.resize(256, 256)
-        self.hbox.addWidget(self.out_image_label)
-
-        self.label = DropLabel("drag & drop image into this line")
-        self.label.dropEvent = self.dropEvent
-        self.label.setAlignment(Qt.AlignCenter)
-        self.layout.addWidget(self.label)
-
-
-        self.layout.addLayout(self.hbox2)
-
-        self.cb_ft = QCheckBox("face trucker")
-        self.cb_ft.setChecked(False)
-        self.cb_ft.stateChanged.connect(self.cb_face_traucker_changed)
-        self.hbox2.addWidget(self.cb_ft, stretch=1)
-
-        self.pushbutton_take_pic = QPushButton(text='live webcam view')
-        self.pushbutton_take_pic.pressed.connect(self.take_pic_button_pressed)
-        self.hbox2.addWidget(self.pushbutton_take_pic, stretch=4)
-
-        self.pushbutton_record = QPushButton(text='Record')
-        self.pushbutton_record.pressed.connect(self.record_vid)
-        self.hbox2.addWidget(self.pushbutton_record, stretch=1)
-        self.pushbutton_record.setEnabled(False)
 
 
 
-        self.slider_face_increse = Style_Slider(orientation=Qt.Horizontal)
-        self.slider_face_increse.setValue(20)
-        self.slider_face_increse.sliderReleased.connect(self.face_incres_sliderReleased)
-        self.slider_face_increse.valueChanged.connect(self.face_incres_sliderReleased)
-        self.slider_face_increse.setEnabled(self.use_face_locations)
-        self.layout.addWidget(self.slider_face_increse, Qt.AlignBottom)
-
-        self.pushbutton_random_entropy = QPushButton(text='new random entropy vector & entropy vector direction')
-        self.pushbutton_random_entropy.pressed.connect(self.random_button_pressed)
-        self.layout.addWidget(self.pushbutton_random_entropy)
-
-
-        self.slider = Style_Slider(orientation=Qt.Horizontal)
-        self.slider.setValue(50)
-        self.slider.sliderReleased.connect(self.sliderReleased)
-        self.slider.valueChanged.connect(self.sliderReleased)
-        self.layout.addWidget(self.slider, Qt.AlignBottom)
-
-        self.label_net = DropLabel("drag & drop net \".pt\" file into this line")
-        self.label_net.dropEvent = self.dropEvent_new_net
-        self.label_net.setAlignment(Qt.AlignCenter)
-        self.layout.addWidget(self.label_net)
-
-        self.save_image = QPushButton(text='save image')
-        self.save_image.pressed.connect(self.save_image_pressed)
-        self.layout.addWidget(self.save_image)
-
-        self.setLayout(self.layout)
-        self.initUI()
-
-    def initUI(self):
-        self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.width, self.height)
-        self.show()
 
 if __name__ == '__main__':
+
+
+    from PyQt5.QtGui import *
+    from PyQt5.QtWidgets import *
+    from PyQt5.QtCore import *
+
+    class DropLabel(QLineEdit):
+        def __init__(self, *args, **kwargs):
+            QLabel.__init__(self, *args, **kwargs)
+            self.setAcceptDrops(True)
+            self.setEnabled(True)
+            self.res_im = None
+
+    class Style_Slider(QSlider):
+        def __init__(self, *args, **kwargs):
+            QSlider.__init__(self, *args, **kwargs)
+
+    class App(QWidget):
+
+        def redraw_in_and_out(self):
+            if self.__dict__.get('img_path') is None:
+                return
+            h = 256
+            w = 256
+            max_added_val = 50
+            random_entropy_direction_mult = (self.slider.value() - self.slider.maximum() / 2) / (self.slider.maximum())
+            random_entropy = self.random_entropy + max_added_val * self.random_entropy_direction * random_entropy_direction_mult
+
+            self.in_im_path, self.res_im_path = run_net_work(img_path=self.img_path, entropy=random_entropy,
+                                                             use_face_locations=self.use_face_locations,
+                                                             face_increes_by_dev_ratio=self.face_increes_by_dev_ratio)
+            self.im_out = QPixmap(self.res_im_path)
+            self.out_image_label.setPixmap(self.im_out.scaled(w, h))
+            self.out_image_label.repaint()
+            self.im_in = QPixmap(self.in_im_path)
+            self.in_image_label.setPixmap(self.im_in.scaled(w, h))
+            self.in_image_label.repaint()
+
+        def sliderReleased(self):
+            self.redraw_in_and_out()
+
+        def face_incres_sliderReleased(self):
+            min_face_range = 0.5
+            max_face_range = 6.5
+            face_slider_range = max_face_range - min_face_range
+            self.face_increes_by_dev_ratio = min_face_range + face_slider_range * self.slider_face_increse.value() / 100
+            self.redraw_in_and_out()
+
+        def dropEvent(self, event):
+            self.img_path = event.mimeData().text()[7:-2]
+            print('prossing image: ' + self.img_path)
+            self.redraw_in_and_out()
+
+        def dropEvent_new_net(self, event):
+            self.net_path = event.mimeData().text()[7:-2]
+            load_net(self.net_path)
+            self.redraw_in_and_out()
+            self.label_net.setText(self.net_path)
+
+        def random_button_pressed(self):
+            self.random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
+            self.random_entropy_direction = Variable(torch.randn(1, style_dim, 1, 1).cuda())
+            self.random_entropy_direction /= torch.norm(self.random_entropy_direction)
+            self.redraw_in_and_out()
+
+        def take_pic_button_pressed(self):
+            if self.live_view_on:
+                self.live_view_on = False
+                return
+            self.pushbutton_take_pic.setText('Press Here to Stop')
+            self.pushbutton_record.setEnabled(True)
+
+            print('press Esc to stop')
+            self.img_path = './cap_tmp_in.png'
+            # cap = cv2.VideoCapture(0)
+            cap = WebcamVideoStream(src=0, width=640, height=480).start()
+            self.live_view_on = True
+            start_time = time.time()
+            while (self.live_view_on):
+                frame = cap.read()
+                # Display the resulting frame
+                if frame is None:
+                    break
+                cv2.imshow('press ENTER to stop', frame)
+                press_key = cv2.waitKey(1)
+
+
+                if press_key & 0xFF == ord('q') or press_key == 27 or press_key == 13:
+                    break
+
+                stop_time = time.time()
+                duration = stop_time - start_time
+                print('FPS: ' + str(1/duration))
+                start_time = time.time()
+
+                cv2.imwrite(self.img_path, frame)
+                self.redraw_in_and_out()
+
+                if self.do_record_vid:
+                    res_img = cv2.imread(self.res_im_path)
+                    in_img = cv2.imread(self.in_im_path)
+                    to_save_frame = np.concatenate((in_img, res_img), axis=1)
+                    self.out_vid.write(to_save_frame)
+            cap.stop()
+
+            cv2.destroyAllWindows()
+            if frame is not None:
+                cv2.imwrite(self.img_path, frame)
+                self.redraw_in_and_out()
+            self.slider.setEnabled(True)
+            self.pushbutton_random_entropy.setEnabled(True)
+            self.label.setEnabled(True)
+            self.pushbutton_take_pic.setEnabled(True)
+            self.label_net.setEnabled(True)
+            self.cb_ft.setEnabled(True)
+            self.pushbutton_record.setEnabled(False)
+
+
+            cv2.imwrite(self.img_path, frame)
+            self.pushbutton_take_pic.setText('live webcam view')
+
+        def save_image_pressed(self):
+            Tk().withdraw()
+            savepath = asksaveasfilename( defaultextension=".png")
+            if savepath is None:
+                return
+            print('saving image to: ' + savepath)
+            shutil.copyfile(self.in_im_path, savepath[:-4] + '_in' + savepath[-4:])
+            shutil.copyfile(self.res_im_path, savepath[:-4] + '_out' + savepath[-4:])
+
+
+        def cb_face_traucker_changed(self,cb):
+            self.use_face_locations = self.cb_ft.isChecked()
+            self.slider_face_increse.setEnabled(self.use_face_locations)
+
+        def record_vid(self):
+            if not self.do_record_vid:
+                self.pushbutton_record.setText('Stop')
+                self.out_vid = cv2.VideoWriter('output_vid.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10, (2*640, 480))
+                self.do_record_vid = True
+
+            else:
+                self.do_record_vid = False
+                self.pushbutton_record.setText('Record')
+                self.out_vid.release()
+
+
+        def __init__(self):
+            super().__init__()
+            self.title = 'Council GAN example'
+            self.left = 10
+            self.top = 10
+            self.width = 640  # 640
+            self.height = 480  # 480
+            self.layout = QVBoxLayout()
+            self.hbox = QHBoxLayout()
+            self.hbox2 = QHBoxLayout()
+            self.random_entropy = Variable(torch.randn(1, style_dim, 1, 1).cuda())
+            self.random_entropy_direction = Variable(torch.randn(1, style_dim, 1, 1).cuda())
+            self.random_entropy_direction /= torch.norm(self.random_entropy_direction)
+            self.res_im_path = None
+            self.use_face_locations = False
+            self.live_view_on = False
+            self.do_record_vid = False
+            self.out_vid = None
+            self.face_increes_by_dev_ratio = 1.5
+            self.layout.addLayout(self.hbox)
+            self.in_image_label = QLabel("in")
+            self.in_image_label.setUpdatesEnabled(True)
+            self.hbox.addWidget(self.in_image_label)
+            self.hbox.addStretch()
+            self.layout.addStretch()
+
+            self.out_image_label = QLabel("out")
+            self.out_image_label.setUpdatesEnabled(True)
+            self.out_image_label.resize(256, 256)
+            self.hbox.addWidget(self.out_image_label)
+
+            self.label = DropLabel("drag & drop image into this line")
+            self.label.dropEvent = self.dropEvent
+            self.label.setAlignment(Qt.AlignCenter)
+            self.layout.addWidget(self.label)
+
+
+            self.layout.addLayout(self.hbox2)
+
+            self.cb_ft = QCheckBox("face trucker")
+            self.cb_ft.setChecked(False)
+            self.cb_ft.stateChanged.connect(self.cb_face_traucker_changed)
+            self.hbox2.addWidget(self.cb_ft, stretch=1)
+
+            self.pushbutton_take_pic = QPushButton(text='live webcam view')
+            self.pushbutton_take_pic.pressed.connect(self.take_pic_button_pressed)
+            self.hbox2.addWidget(self.pushbutton_take_pic, stretch=4)
+
+            self.pushbutton_record = QPushButton(text='Record')
+            self.pushbutton_record.pressed.connect(self.record_vid)
+            self.hbox2.addWidget(self.pushbutton_record, stretch=1)
+            self.pushbutton_record.setEnabled(False)
+
+
+
+            self.slider_face_increse = Style_Slider(orientation=Qt.Horizontal)
+            self.slider_face_increse.setValue(20)
+            self.slider_face_increse.sliderReleased.connect(self.face_incres_sliderReleased)
+            self.slider_face_increse.valueChanged.connect(self.face_incres_sliderReleased)
+            self.slider_face_increse.setEnabled(self.use_face_locations)
+            self.layout.addWidget(self.slider_face_increse, Qt.AlignBottom)
+
+            self.pushbutton_random_entropy = QPushButton(text='new random entropy vector & entropy vector direction')
+            self.pushbutton_random_entropy.pressed.connect(self.random_button_pressed)
+            self.layout.addWidget(self.pushbutton_random_entropy)
+
+
+            self.slider = Style_Slider(orientation=Qt.Horizontal)
+            self.slider.setValue(50)
+            self.slider.sliderReleased.connect(self.sliderReleased)
+            self.slider.valueChanged.connect(self.sliderReleased)
+            self.layout.addWidget(self.slider, Qt.AlignBottom)
+
+            self.label_net = DropLabel("drag & drop net \".pt\" file into this line")
+            self.label_net.dropEvent = self.dropEvent_new_net
+            self.label_net.setAlignment(Qt.AlignCenter)
+            self.layout.addWidget(self.label_net)
+
+            self.save_image = QPushButton(text='save image')
+            self.save_image.pressed.connect(self.save_image_pressed)
+            self.layout.addWidget(self.save_image)
+
+            self.setLayout(self.layout)
+            self.initUI()
+
+        def initUI(self):
+            self.setWindowTitle(self.title)
+            self.setGeometry(self.left, self.top, self.width, self.height)
+            self.show()
+
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     palette = QPalette()
