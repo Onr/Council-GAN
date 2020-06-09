@@ -388,10 +388,7 @@ if __name__ == '__main__':
             self.redraw_in_and_out()
 
         def face_incres_sliderReleased(self):
-            min_face_range = 0.5
-            max_face_range = 6.5
-            face_slider_range = max_face_range - min_face_range
-            self.face_increes_by_dev_ratio = min_face_range + face_slider_range * self.slider_face_increse.value() / 100
+            self.face_increes_by_dev_ratio = self.min_face_range + self.face_slider_range * self.slider_face_increse.value() / 100
             self.redraw_in_and_out()
 
         def dropEvent(self, event):
@@ -500,6 +497,9 @@ if __name__ == '__main__':
             self.top = 10
             self.width = 640  # 640
             self.height = 480  # 480
+            self.min_face_range = 0.5
+            self.max_face_range = 6.5
+            self.face_slider_range = self.max_face_range - self.min_face_range
             self.layout = QVBoxLayout()
             self.hbox = QHBoxLayout()
             self.hbox2 = QHBoxLayout()
@@ -511,7 +511,6 @@ if __name__ == '__main__':
             self.live_view_on = False
             self.do_record_vid = False
             self.out_vid = None
-            self.face_increes_by_dev_ratio = 1.5
             self.layout.addLayout(self.hbox)
             self.in_image_label = QLabel("in")
             self.in_image_label.setUpdatesEnabled(True)
@@ -549,9 +548,10 @@ if __name__ == '__main__':
 
 
             self.slider_face_increse = Style_Slider(orientation=Qt.Horizontal)
-            self.slider_face_increse.setValue(20)
+            self.slider_face_increse.setValue(27)
             self.slider_face_increse.sliderReleased.connect(self.face_incres_sliderReleased)
             self.slider_face_increse.valueChanged.connect(self.face_incres_sliderReleased)
+            self.face_increes_by_dev_ratio = self.min_face_range + self.face_slider_range * self.slider_face_increse.value() / 100
             self.slider_face_increse.setEnabled(self.use_face_locations)
             self.layout.addWidget(self.slider_face_increse, Qt.AlignBottom)
 
