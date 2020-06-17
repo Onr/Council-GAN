@@ -116,10 +116,14 @@ if config['misc']['start_tensor_board']:
 train_writer = tensorboardX.SummaryWriter(log_directory, purge_step=iterations)
 
 if config['misc']['do_telegram_report']:           
-    import telegram
-    from telegram.ext import Updater, MessageHandler, Filters
+    try:
+        import telegram
+        from telegram.ext import Updater, MessageHandler, Filters
+    except:
+        print(colored('Failed to load Telegram Try: \n1) conda install -c conda-forge python-telegram-bot. \n OR \n2) in \".yaml\" file change do_telegram_report to False \n in the meantime Continuing without ....', color='red', attrs=['underline', 'bold', 'blink', 'reverse']))
+        config['misc']['do_telegram_report'] = False
+if config['misc']['do_telegram_report']:           
     in_ = ''
-
     confidential_yaml_file_path = './confidential_do_not_upload_to_github.yaml'
     if not os.path.exists(confidential_yaml_file_path):
         
