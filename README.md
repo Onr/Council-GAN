@@ -2,7 +2,7 @@
 Implementation of our paper Breaking the Cycle - Colleagues are all you need (CVPR 2020)
 ### Paper
 [Ori Nizan](https://onr.github.io/) , [Ayellet Tal](http://webee.technion.ac.il/~ayellet/),
-**[Breaking the Cycle - Colleagues are all you need](https://arxiv.org/abs/1911.10538 "Breaking the cycle -- Colleagues are all you need")**
+**[Breaking the Cycle - Colleagues are all you need](http://openaccess.thecvf.com/content_CVPR_2020/html/Nizan_Breaking_the_Cycle_-_Colleagues_Are_All_You_Need_CVPR_2020_paper.html "Breaking the cycle -- Colleagues are all you need")**
 **[[Project](https://onr.github.io/Council_web/)]**
 
 ![gan_council_teaser](/images/paper_teaser_small.png)
