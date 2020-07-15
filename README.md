@@ -119,3 +119,7 @@ or using spsified memeber:
   year={2020}
 }
 ```
+
+#### Acknowledgement
+In this work we based our code on [MUNIT](https://github.com/NVlabs/MUNIT) implementation.  Please cite the original [MUNIT](https://arxiv.org/abs/1804.04732) if you use  their part of the code.
+
