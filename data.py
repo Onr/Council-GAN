@@ -6,6 +6,7 @@ import torch.utils.data as data
 import os.path
 import torch
 import numpy as np
+from warnings import warn
 
 def default_loader(path):
     return Image.open(path).convert('RGB')
@@ -135,7 +136,9 @@ class ImageFolder(data.Dataset):
                 img = self.loader(path)
             except Exception as e:
                 print(str(e))
+                warnings.warn(f'Failed to load {path}, removing from images list')
                 del self.imgs[index]
+                index = index if index < len(self.imgs) else 0
                 self.__getitem__(self, index)
             if self.transform is not None:
                 img = self.transform(img)
