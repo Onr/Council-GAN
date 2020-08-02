@@ -139,7 +139,7 @@ class ImageFolder(data.Dataset):
                 print(str(e))
                 warn(f'Failed to load {path}, removing from images list')
                 del self.imgs[index]
-                index = index if index < len(self.imgs) else 0
+                index = index % len(self.imgs)
                 self.__getitem__(self, index)
             if self.transform is not None:
                 img = self.transform(img)
