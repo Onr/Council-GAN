@@ -130,13 +130,14 @@ class ImageFolder(data.Dataset):
 
 
     def __getitem__(self, index):
+        index = index % len(self.imgs)
         path = self.imgs[index]
         if not path.endswith('.npy'):
             try:
                 img = self.loader(path)
             except Exception as e:
                 print(str(e))
-                warnings.warn(f'Failed to load {path}, removing from images list')
+                warn(f'Failed to load {path}, removing from images list')
                 del self.imgs[index]
                 index = index if index < len(self.imgs) else 0
                 self.__getitem__(self, index)
