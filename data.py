@@ -135,14 +135,18 @@ class ImageFolder(data.Dataset):
         if not path.endswith('.npy'):
             try:
                 img = self.loader(path)
+                if self.transform is not None:
+                    img = self.transform(img)
             except Exception as e:
                 print(str(e))
                 warn(f'Failed to load {path}, removing from images list')
                 del self.imgs[index]
                 index = index % len(self.imgs)
-                self.__getitem__(self, index)
-            if self.transform is not None:
-                img = self.transform(img)
+                if self.return_paths:
+                    img, path = self.__getitem__(self, index)
+                else:
+                    img = self.__getitem__(self, index)
+
         else:  # numpy data input # for brats dataset  # TODO add transforms
             img = torch.from_numpy(np.load(path))
             img = img.transpose(dim0=2, dim1=0)
