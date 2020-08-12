@@ -302,14 +302,24 @@ class AdaINGen(nn.Module):
 
     def assign_adain_params(self, adain_params, model):
         # assign the adain_params to the AdaIN layers in model
+        start_ind = 0
         for m in model.modules():
             if m.__class__.__name__ == "AdaptiveInstanceNorm2d":
-                mean = adain_params[:, :m.num_features]
-                std = adain_params[:, m.num_features:2*m.num_features]
+                mean = adain_params[:, start_ind: start_ind + m.num_features]
+                std = adain_params[:, start_ind + m.num_features: start_ind + 2*m.num_features]
                 m.bias = mean.contiguous().view(-1)
                 m.weight = std.contiguous().view(-1)
-                if adain_params.size(1) > 2*m.num_features:
-                    adain_params = adain_params[:, 2*m.num_features:]
+                start_ind += 2*m.num_features
+
+    def get_num_adain_params(self, model):
+        # return the number of AdaIN parameters needed by the model
+        num_adain_params = 0
+        for m in model.modules():
+            if m.__class__.__name__ == "AdaptiveInstanceNorm2d":
+                num_adain_params += 2*m.num_features
+        return num_adain_params
+
+
 
     def get_num_adain_params(self, model):
         # return the number of AdaIN parameters needed by the model

@@ -249,8 +249,11 @@ class Council_Trainer(nn.Module):
         return (torch.sum(torch.abs(mask[:, :, 1:, :]-mask[:, :, :-1, :])) + \
                torch.sum(torch.abs(mask[:, :, :, 1:] - mask[:, :, :, :-1]))) / mask.numel()
 
-    def forward(self, x_a, x_b=None, s_a=None, s_b=None):
+    def forward(self, x_a, s_t=None, x_b=None, s_a=None, s_b=None):
         self.eval()
+        if s_t is not None:
+            s_a = s_t
+            s_b = s_t
         if self.do_a2b_conf:
             s_b = self.s_b if s_b is None else s_b
             s_b = Variable(s_b)
@@ -264,10 +267,10 @@ class Council_Trainer(nn.Module):
                 c_a, s_a_fake = self.gen_a2b.encode(x_a)
                 x_ab_s.append(self.gen_a2b.decode(c_a, s_b, x_a))
             if self.do_b2a_conf:
-                c_b, s_b_fake = self.gen_b2a.encode(x_b)
-                x_ba_s.append(self.gen_b2a.decode(c_b, s_a, x_b))
+                x_b = x_a if x_b is None else x_b
+                c_b, s_b_fake = self.gen_b2a_s[i].encode(x_b)
+                x_ba_s.append(self.gen_b2a_s[i].decode(c_b, s_a, x_b))
 
-        self.train()
         if self.do_a2b_conf and self.do_b2a_conf:
             return x_ab_s, x_ba_s
         elif self.do_b2a_conf:

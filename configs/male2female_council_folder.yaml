@@ -120,7 +120,7 @@ RandomResizedCrop_scale_min: 0.5
 RandomResizedCrop_ratio_max: 4. / 3.
 RandomResizedCrop_ratio_min: 3. / 4.
 
-data_root: ./datasets/celebA_malefemale_blond   # dataset folder location
+data_root: ./datasets/celeba_male2female   # dataset folder location
 
 inbalenceDataSets:
   imbalance_sub_dataset: False # Create basic inblace between domains for instance, A/1-male with galsses, A/2-male without galsses, B/1-female with galsses, B/2-female without galsses)

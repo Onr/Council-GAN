@@ -85,15 +85,25 @@ or using spsified memeber:
 
     bash ./scripts/download.sh pretrain_male_to_female
     
+###### Then to convert images in --input_folder run:
+
+    python test_on_folder.py --config pretrain/m2f/256/male2female_council_folder.yaml --output_folder ./outputs/male2famle_256_256 --checkpoint pretrain/m2f/256/01000000 --input_folder ./datasets/celeba_male2female/testA --a2b 1
+    
 #### Download pretrain glasses removal model:
 
     bash ./scripts/download.sh pretrain_glasses_removal
     
+###### Then to convert images in --input_folder run:
+
+    python test_on_folder.py --config pretrain/glasses_removal/128/galsses_council_folder.yaml --output_folder ./outputs/council_glasses_128_128 --checkpoint pretrain/glasses_removal/128/01000000 --input_folder ./datasets/glasses/testA --a2b 1
+    
 #### Download pretrain selfie to anime model:
 
     bash ./scripts/download.sh pretrain_selfie_to_anime
+    
+###### Then to convert images in --input_folder run:
 
-
+    python test_on_folder.py --config pretrain/anime/256/anime2face_council_folder.yaml --output_folder ./outputs/council_anime2face_256_256 --checkpoint pretrain/anime/256/01000000 --input_folder ./datasets/selfie2anime/testB --a2b 0
 
 ### Test GUI:
 ![gan_council_overview](/images/test_gui.png)
@@ -108,6 +118,7 @@ or using spsified memeber:
     
 ##### selfie2anime
     python test_gui.py --config pretrain/anime/256/anime2face_council_folder.yaml --checkpoint pretrain/anime/256/b2a_gen_3_01000000.pt --a2b 0
+    
     
     
 #### Citation

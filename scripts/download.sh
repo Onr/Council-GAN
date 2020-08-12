@@ -65,7 +65,7 @@ elif [ $FILE == "pretrain_selfie_to_anime" ]; then
 
 
 else
-    echo "Available arguments are celeba_male2female, celeba_glasses_removal, selfie2anime, pretrain_male_to_female, pretrain_glasses_removal, pretrain_selfie_to_anime."
+    echo "Available arguments are celeba_male2female, celeba_glasses_removal, U_GAT_IT_selfie2anime, pretrain_male_to_female, pretrain_glasses_removal, pretrain_selfie_to_anime."
     exit 1
 
 fi

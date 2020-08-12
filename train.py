@@ -185,7 +185,7 @@ if config['misc']['do_telegram_report']:
                 print('telegram send_document Failed')
     else:
         config['misc']['do_telegram_report'] = False
-        print('You can set do_telegram_report to False to not ask again')
+        print('You can set do_telegram_report to False to not be asked again')
 
 def test_fid(dataset1, dataset2, iteration, train_writer, name, m1=None, s1=None, retun_m1_s1=False, batch_size=10, dims=2048, cuda=True):
     import pytorch_fid.fid_score
