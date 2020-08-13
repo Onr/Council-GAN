@@ -119,7 +119,8 @@ or using spsified memeber:
 ##### selfie2anime
     python test_gui.py --config pretrain/anime/256/anime2face_council_folder.yaml --checkpoint pretrain/anime/256/b2a_gen_3_01000000.pt --a2b 0
     
-    
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Onr/Council-GAN/blob/master/Council_gan_basic_inference.ipynb)
+
     
 #### Citation
 ```
