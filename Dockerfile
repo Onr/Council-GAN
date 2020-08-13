@@ -11,6 +11,8 @@ RUN apt-get update && apt-get install -y \
     tmux \
     htop \
     nano \
+	vim \
+	wget \
  && rm -rf /var/lib/apt/lists/*
 
 # Create a working directory
@@ -28,10 +30,11 @@ ENV HOME=/home/user
 RUN chmod 777 /home/user
 
 # Install Miniconda
-RUN curl -so ~/miniconda.sh https://repo.continuum.io/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh \
- && chmod +x ~/miniconda.sh \
- && ~/miniconda.sh -b -p ~/miniconda \
- && rm ~/miniconda.sh
+WORKDIR /home/user
+RUN wget https://repo.continuum.io/miniconda/Miniconda3-4.6.14-Linux-x86_64.sh \
+ && chmod +x ~/Miniconda3-4.6.14-Linux-x86_64.sh\
+ && ~/Miniconda3-4.6.14-Linux-x86_64.sh -b -p ~/miniconda \
+ && rm ~/Miniconda3-4.6.14-Linux-x86_64.sh
 ENV PATH=/home/user/miniconda/bin:$PATH
 ENV CONDA_AUTO_UPDATE_CONDA=false
 
