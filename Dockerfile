@@ -70,7 +70,7 @@ RUN conda install -y graphviz=2.40.1 python-graphviz=0.8.4 \
 # Install Council_GAN requirements
 RUN conda install -c conda-forge tensorboardx 
 RUN conda install -c omnia termcolor 
-RUN conda install -c conda-forge python-telegram-bot
+RUN conda install -c conda-forge python-telegram-bot \
  && conda clean -ya
 
 # Install OpenCV3 Python bindings
