@@ -126,7 +126,7 @@ or using spsified memeber:
 ```
 @inproceedings{nizan2020council,
   title={Breaking the Cycle - Colleagues are all you need},
-  author={Ori Nizan, Ayellet Tal},
+  author={Ori Nizan and Ayellet Tal},
   booktitle={IEEE conference on computer vision and pattern recognition (CVPR)},
   year={2020}
 }
